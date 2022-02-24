@@ -9,6 +9,7 @@ module Data.Set.Word64.Internal (
 Tree (..), empty, singleton, fromList,
 insert, delete,
 union, intersection, difference, nonintersection,
+filter,
 member, null, foldl, foldl', foldr, foldr', foldMap, lookupMax, lookupMin,
 suffixOf, suffixBitMask,
 ) where
@@ -20,7 +21,7 @@ import Data.Word (Word64)
 import Data.Functor.Const
 import Data.Functor.Identity
 import qualified Data.List as List
-import Prelude hiding (foldMap, foldr, null, foldl)
+import Prelude hiding (filter, foldMap, foldr, null, foldl)
 
 
 type Prefix = Word64
@@ -201,7 +202,7 @@ union sx@(Branch pmx lx rx) sy@(Branch pmy ly ry)
 union sx@Branch{} (Leaf p m) = insertBM p m sx
 union sx@Branch{} Seed = sx
 union (Leaf p m) sy = insertBM p m sy
-union Seed _ = Seed
+union Seed sy = sy
 
 
 difference :: Tree -> Tree -> Tree
@@ -375,6 +376,16 @@ shorter mx my = mx > my
 --    zeroBits = empty
 --    bitSizeMaybe _ = Nothing
 --    complement = xor (fromList [0..maxBound]) -- oh god don't do this
+
+
+filter :: (Word64 -> Bool) -> Tree -> Tree
+filter f sw = case sw of
+   Branch pm l r
+      -> branch pm (filter f l) (filter f r)
+   Leaf p m
+      -> leaf p (foldl'Bits (\ m' w -> if f w then m' .|. bitmapOf w else m') 0 p m)
+   Seed
+      -> Seed
 
 ------ Summarize Entire Sets ----
 
