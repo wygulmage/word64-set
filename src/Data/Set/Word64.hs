@@ -1,26 +1,32 @@
 {-# LANGUAGE GADTs
+           , TypeFamilies
            , RankNTypes
            , ScopedTypeVariables
            , BangPatterns
-           , FlexibleInstances
    #-}
 
 
 module Data.Set.Word64 (
-Word64Set, Set (..), singleton, fromList,
+Word64Set, Set (..), singleton, toSet,
 insert, delete, alterF,
 intersection, union, difference,
 toAscList, toDesList,
 ) where
 
+import Control.DeepSeq
+import Data.Semigroup
 import Data.Foldable
+import qualified Data.Foldable as Foldable
 import Data.Word (Word64)
 import qualified Data.Set.Word64.Internal as Internal
-import qualified GHC.Exts as Ext (build)
+import qualified GHC.Exts as Ext (IsList (..), build)
 
 type Word64Set = Set Word64
 
 data Set w64 where Set :: !Internal.Tree -> Set Word64
+
+instance NFData (Set i64) where rnf = rwhnf
+instance NFData1 Set where liftRnf _ = rwhnf
 
 instance Show (Set w64) where
    show sw =
@@ -29,8 +35,18 @@ instance Show (Set w64) where
 instance Eq (Set w64) where
    Set sx == Set sy = sx == sy
 
-instance Semigroup (Set w64) where (<>) = union
-instance Monoid (Set Word64) where mempty = Set Internal.empty
+instance Ord (Set w64) where
+   compare sx sy = compare (toAscList (observe sx)) (toAscList (observe sy))
+
+instance Semigroup (Set w64) where
+   (<>) = union
+   stimes = stimesIdempotent
+instance (w64 ~ Word64)=> Monoid (Set w64) where mempty = Set Internal.empty
+
+instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
+   type Item (Set i64) = i64
+   fromList = toSet
+   toList = toAscList
 
 instance Foldable Set where
    null (Set sw) = Internal.null sw
@@ -39,16 +55,16 @@ instance Foldable Set where
    foldr' f z (Set sw) = Internal.foldr' f z sw
    foldl f z (Set sw) = Internal.foldl f z sw
    foldl' f z (Set sw) = Internal.foldl' f z sw
+   toList = toAscList
    elem w (Set sw) = Internal.member w sw
    maximum = foldl (\ _ x -> x) (error "maximum: empty Set")
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
 
-
 singleton :: Word64 -> Set Word64
 singleton x = Set (Internal.singleton x)
 
-fromList :: [Word64] -> Set Word64
-fromList ws = Set (Internal.fromList ws)
+toSet :: (Foldable m)=> m Word64 -> Set Word64
+toSet = foldl' (flip insert) mempty
 
 insert :: w64 -> Set w64 -> Set w64
 insert w (Set sw) = Set (Internal.insert w sw)

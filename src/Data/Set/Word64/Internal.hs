@@ -13,6 +13,7 @@ member, null, foldl, foldl', foldr, foldr', foldMap, lookupMax, lookupMin,
 suffixOf, suffixBitMask,
 ) where
 
+import Control.DeepSeq
 import Data.Bits
 import Data.Monoid
 import Data.Word (Word64)
@@ -39,6 +40,7 @@ data Tree
 -}
 -- 'Branch'es should always end in a 'Leaf', never a 'Seed'. The 'BitMap' of a 'Leaf' should never be empty (0).
 
+instance NFData Tree where rnf = rwhnf
 
 instance Eq Tree where
    Branch pmx lx rx == Branch pmy ly ry =
