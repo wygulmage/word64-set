@@ -175,30 +175,25 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
 
 union :: Tree -> Tree -> Tree
 union sx@(Branch pmx lx rx) sy@(Branch pmy ly ry)
-   | shorter mx my
-   = unionx
-   | shorter my mx
-   = uniony
-   | otherwise = link px sx py sy
+   | shorter ix iy = unionx
+   | shorter iy ix = uniony
+   | px == py      = Branch pmx (union lx ly) (union rx ry)
+   | otherwise     = link px sx py sy
    where
       px = prefixOf pmx
+      ix = suffixOf pmx
       mx = bitmapOf pmx
       py = prefixOf pmy
+      iy = suffixOf pmy
       my = bitmapOf pmy
       unionx
-         | nomatch py px mx
-         = link px sx py sy
-         | zero py mx
-         = Branch pmx (union lx sy) rx
-         | otherwise
-         = Branch pmx lx (union rx sy)
+         | nomatch py px mx = link px sx py sy
+         | zero py mx       = Branch pmx (union lx sy) rx
+         | otherwise        = Branch pmx lx (union rx sy)
       uniony
-         | nomatch px py my
-         = link px sx py sy
-         | zero px my
-         = Branch pmy (union sx ly) ry
-         | otherwise
-         = Branch pmy ly (union sx ry)
+         | nomatch px py my = link px sx py sy
+         | zero px my       = Branch pmy (union sx ly) ry
+         | otherwise        = Branch pmy ly (union sx ry)
 union sx@Branch{} (Leaf p m) = insertBM p m sx
 union sx@Branch{} Seed = sx
 union (Leaf p m) sy = insertBM p m sy

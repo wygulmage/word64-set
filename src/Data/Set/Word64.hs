@@ -128,7 +128,7 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
 {-# INLINE alterFWith #-}
 
 union :: Set w64 -> Set w64 -> Set w64
-union = liftSet2 Internal.intersection
+union = liftSet2 Internal.union
 
 intersection :: Set w64 -> Set w64 -> Set w64
 intersection = liftSet2 Internal.intersection
