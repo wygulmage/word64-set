@@ -103,45 +103,40 @@ hasNegativeBranch pm = Internal.suffixOf pm == Internal.suffixBitMask
 
 foldMap :: (Monoid b)=> (i64 -> b) -> Set i64 -> b
 foldMap f (Set sx) = case sx of
-   Internal.Branch pm l r
-      | hasNegativeBranch pm
-      -> Internal.foldMap f' r <> Internal.foldMap f' l
+   Internal.Branch pm nat neg | hasNegativeBranch pm
+      -> Internal.foldMap f' neg <> Internal.foldMap f' nat
    _
       -> Internal.foldMap f' sx
    where f' = f . word64ToInt64
 
 foldr :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr f z (Set sx) = case sx of
-   Internal.Branch pm l r
-      | hasNegativeBranch pm
-      -> Internal.foldr f' (Internal.foldr f' z l) r
+   Internal.Branch pm nat neg | hasNegativeBranch pm
+      -> Internal.foldr f' (Internal.foldr f' z neg) nat
    _
       -> Internal.foldr f' z sx
    where f' = f . word64ToInt64
 
 foldr' :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr' f z (Set sx) = case sx of
-   Internal.Branch pm l r
-      | hasNegativeBranch pm
-      -> Internal.foldr' f' (Internal.foldr' f' z l) r
+   Internal.Branch pm nat neg | hasNegativeBranch pm
+      -> Internal.foldr' f' (Internal.foldr' f' z nat) neg
    _
       -> Internal.foldr' f' z sx
    where f' = f . word64ToInt64
 
 foldl :: (b -> i64 -> b) -> b -> Set i64 -> b
 foldl f z (Set sx) = case sx of
-   Internal.Branch pm l r
-      | hasNegativeBranch pm
-      -> Internal.foldl f' (Internal.foldl f' z r) l
+   Internal.Branch pm nat neg | hasNegativeBranch pm
+      -> Internal.foldl f' (Internal.foldl f' z neg) nat
    _
       -> Internal.foldl f' z sx
    where f' z' x = f z' (word64ToInt64 x)
 
 foldl' :: (a -> i64 -> a) -> a -> Set i64 -> a
 foldl' f z (Set sx) = case sx of
-   Internal.Branch pm l r
-      | hasNegativeBranch pm
-      -> Internal.foldl' f' (Internal.foldl' f' z r) l
+   Internal.Branch pm nat neg | hasNegativeBranch pm
+      -> Internal.foldl' f' (Internal.foldl' f' z neg) nat
    _
       -> Internal.foldl' f' z sx
    where f' z' x = f z' (word64ToInt64 x)
