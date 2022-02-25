@@ -127,7 +127,7 @@ deleteBM p' m' sx = case sx of
          !m = bitmapOf pm
    Leaf p m
       | p == p'
-      -> Leaf p (m .&. complement m')
+      -> leaf p (m .&. complement m')
       | otherwise
       -> sx
    Seed
