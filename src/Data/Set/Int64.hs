@@ -6,7 +6,7 @@
    #-}
 
 module Data.Set.Int64 (
-Int64Set, Set(..), singleton, fromList,
+Int64Set, Set(..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, difference,
 splitMember,
@@ -50,11 +50,12 @@ instance Ord (Set i64) where
 instance Semigroup (Set i64) where
    (<>) = union
    stimes = stimesIdempotent
-instance (i64 ~ Int64)=> Monoid (Set i64) where mempty = Set Internal.empty
+instance (i64 ~ Int64)=> Monoid (Set i64) where
+   mempty = empty
 
 instance (i64 ~ Int64)=> Ext.IsList (Set i64) where
    type Item (Set i64) = i64
-   fromList = toSet
+   fromList = fromList
    toList = toAscList
 
 instance Foldable Set where
@@ -69,6 +70,9 @@ instance Foldable Set where
    elem i (Set sw) = Internal.member (int64ToWord64 i) sw
    maximum = foldl (\ _ x -> x) (error "maximum: empty Set")
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
+
+empty :: Set Int64
+empty = Set Internal.empty
 
 singleton :: Int64 -> Set Int64
 singleton = Set . Internal.singleton . int64ToWord64
@@ -86,6 +90,13 @@ delete :: a -> Set a -> Set a
 delete !i (Set sx) = Set (Internal.delete (int64ToWord64 i) sx)
 
 alterF :: (Functor m)=> (Bool -> m Bool) -> i64 -> Set i64 -> m (Set i64)
+{-^ @alterF@ is the general-purpose function for operating on a single element of a 'Set'.
+@'getConst' . alterF 'Const'@ is equivalent to 'elem'.
+@'runIdentity' . alterF (\_-> 'Identity' 'True')@ is equivalent to 'insert', although it has slightly different performance characteristics.
+@'runIdentity' . alterF (\_-> 'Identity' 'False')@ is equivalent to 'delete', although it has slightly different performance characteristics.
+@alterF (\ b -> (b, 'True'))@ inserts an element into a 'Set' and tells you whether it was already present.
+@alterF (\ b -> (b, 'False'))@ deletes an element from a 'Set' and tells you whether it was already present.
+-}
 alterF = alterFWith fmap
 
 alterFWith ::
@@ -110,7 +121,8 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
 {-# INLINE alterFWith #-}
 
 hasNegativeBranch :: Internal.PrefixWithIndex -> Bool
-hasNegativeBranch pm = Internal.suffixOf pm == Internal.suffixBitMask
+hasNegativeBranch pm = Internal.suffixOf pm == Internal.suffixBitMask -- 63
+{-# INLINE hasNegativeBranch #-}
 
 foldMap :: (Monoid b)=> (i64 -> b) -> Set i64 -> b
 foldMap f (Set sx) = case sx of

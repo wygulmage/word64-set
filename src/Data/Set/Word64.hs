@@ -7,9 +7,10 @@
 
 
 module Data.Set.Word64 (
-Word64Set, Set (..), singleton, fromList,
+Word64Set, Set (..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, difference,
+splitMember,
 toAscList, toDesList,
 ) where
 
@@ -49,11 +50,12 @@ instance Ord (Set w64) where
 instance Semigroup (Set w64) where
    (<>) = union
    stimes = stimesIdempotent
-instance (w64 ~ Word64)=> Monoid (Set w64) where mempty = Set Internal.empty
+instance (w64 ~ Word64)=> Monoid (Set w64) where
+   mempty = empty
 
 instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
    type Item (Set i64) = i64
-   fromList = toSet
+   fromList = fromList
    toList = toAscList
 
 instance Foldable Set where
@@ -68,6 +70,9 @@ instance Foldable Set where
    elem w (Set sw) = Internal.member w sw
    maximum = foldl (\ _ x -> x) (error "maximum: empty Set")
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
+
+empty :: Set Word64
+empty = Set Internal.empty
 
 singleton :: Word64 -> Set Word64
 singleton x = Set (Internal.singleton x)
@@ -93,6 +98,13 @@ toDesList xs = Ext.build (\ c n -> foldl (flip c) n xs)
 
 
 alterF :: (Functor m)=> (Bool -> m Bool) -> w64 -> Set w64 -> m (Set w64)
+{-^ @alterF@ is the general-purpose function for operating on a single element of a 'Set'.
+@'getConst' . alterF 'Const'@ is equivalent to 'elem'.
+@'runIdentity' . alterF (\_-> 'Identity' 'True')@ is equivalent to 'insert', although it has slightly different performance characteristics.
+@'runIdentity' . alterF (\_-> 'Identity' 'False')@ is equivalent to 'delete', although it has slightly different performance characteristics.
+@alterF (\ b -> (b, 'True'))@ inserts an element into a 'Set' and tells you whether it was already present.
+@alterF (\ b -> (b, 'False'))@ deletes an element from a 'Set' and tells you whether it was already present.
+-}
 alterF = alterFWith fmap
 
 alterFWith ::
@@ -128,6 +140,8 @@ difference :: Set w64 -> Set w64 -> Set w64
 difference = liftSet2 Internal.difference
 
 splitMember :: w64 -> Set w64 -> (Set w64, Bool, Set w64)
+{-^ Split a 'Set' into the 'Set' of elements that are less than and the 'Set' of elements that are greater than a 'Word64', and indicate whether the provided 'Word64 was present in the 'Set'.
+-}
 splitMember w (Set sw) =
    case Internal.splitMember w sw of (l, mmbr, r) -> (Set l, mmbr, Set r)
 
