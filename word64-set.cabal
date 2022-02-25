@@ -38,4 +38,5 @@ test-suite test
    build-depends:
       base >=4.13 && <4.14
     , QuickCheck
+    , hspec
     , word64-set

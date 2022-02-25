@@ -206,7 +206,18 @@ difference sx sy = case sy of
    Leaf p m -> deleteBM p m sx
    Branch pmy ly ry -> case sx of
       Seed -> Seed
-      Leaf p m -> differenceBM p m sy
+      Leaf p m -> differenceBM sy
+         where
+           differenceBM sw = case sw of
+              Branch pm' l r
+                  | nomatch p (prefixOf pm') (bitmapOf pm')
+                  -> sx
+                  | zero p (bitmapOf pm')
+                  -> differenceBM l
+                  | otherwise
+                  -> differenceBM r
+              Leaf p' m' | p == p' -> Leaf p (m .&. complement m')
+              _ -> sx
       Branch pmx lx rx
          | shorter ix iy -> differencex
          | shorter iy ix -> differencey
@@ -220,37 +231,14 @@ difference sx sy = case sy of
             px = prefixOf pmx
             py = prefixOf pmy
             differencex
-               | nomatch py px mx
-               = sx
-               | zero py mx
-               = branch pmx (difference lx sy) rx
-               | otherwise
-               = branch pmx lx (difference rx sy)
+               | nomatch py px mx = sx
+               | zero py mx       = branch pmx (difference lx sy) rx
+               | otherwise        = branch pmx lx (difference rx sy)
             differencey
-               | nomatch px py my
-               = sx
-               | zero px my
-               = difference sx ly
-               | otherwise
-               = difference sx ry
+               | nomatch px py my = sx
+               | zero px my       = difference sx ly
+               | otherwise        = difference sx ry
 
-differenceBM :: Prefix -> BitMap -> Tree -> Tree
-{-^ Delete a set from a deconstructed leaf. -}
-differenceBM p m sw = case sw of
-   Branch pm' l r
-      | nomatch p (prefixOf pm') (bitmapOf pm')
-      -> Leaf p m
-      | zero p (bitmapOf pm')
-      -> differenceBM p m l
-      | otherwise
-      -> differenceBM p m r
-   Leaf p' m'
-      | p == p'
-      -> Leaf p (m .&. complement m')
-      | otherwise
-      -> Leaf p m
-   Seed
-      -> Leaf p m
 
 nonintersection :: Tree -> Tree -> Tree
 {-^ @nonintersection@ gives the symmetric difference of 'Tree's. -}
