@@ -6,11 +6,11 @@
 
 
 module Data.Set.Word64.Internal (
-Tree (..), empty, singleton, fromList,
+PrefixWithIndex, Tree (..), empty, singleton, fromList,
 insert, delete,
 union, intersection, difference, nonintersection,
-filter,
-member, null, foldl, foldl', foldr, foldr', foldMap, lookupMax, lookupMin,
+filter, splitMember,
+member, null, foldl, foldl', foldr, foldr', foldMap, lookupMax, lookupMin, size,
 suffixOf, suffixBitMask,
 ) where
 
@@ -500,6 +500,37 @@ foldMapBits f = foldrBits ((<>) . f) mempty
 lookupMax, lookupMin :: Tree -> Maybe Word64
 lookupMax = foldl (\ _ x -> Just x) Nothing
 lookupMin = foldr (\ x _ -> Just x) Nothing
+
+size :: Tree -> Word64
+size = foldl'Leaves (\ z _ m -> z + fromIntegral (popCount m)) 0
+
+splitMember :: Word64 -> Tree -> (Tree, Bool, Tree)
+splitMember w sw = case sw of
+   Branch pm l r
+      | not (nomatch w (prefixOf pm) (bitmapOf pm))
+      -> if zero w (bitmapOf pm)
+         then case splitMember w l of (l', mmbr, r') -> (l', mmbr, union r' r)
+         else case splitMember w r of (l', mmbr, r') -> (union l l', mmbr, r')
+      | otherwise
+      -> if w < prefixOf pm
+         then (empty, False, sw)
+         else (sw, False, empty)
+   Leaf pre bmp
+      | pre > w
+      -> (empty, False, sw)
+      | pre < prefixOf w
+      -> (sw, False, empty)
+      | otherwise
+      -> let
+            l = leaf pre (bmp .&. lowBmp)
+            mmbr = not (disjointBits bmp bmpw)
+            r = leaf pre (bmp .&. highBmp)
+            bmpw = bitmapOf w
+            lowBmp = bmpw - 1
+            highBmp = complement (lowBmp + bmp)
+         in (l, mmbr, r)
+   Seed
+      -> (Seed, False, Seed)
 
 ------ Internal ------
 

@@ -50,6 +50,7 @@ instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
 
 instance Foldable Set where
    null (Set sw) = Internal.null sw
+   length (Set sw) = fromIntegral (Internal.size sw)
    foldMap f (Set sw) = Internal.foldMap f sw
    foldr f z (Set sw) = Internal.foldr f z sw
    foldr' f z (Set sw) = Internal.foldr' f z sw
@@ -114,6 +115,10 @@ nonintersection = liftSet2 Internal.nonintersection
 
 difference :: Set w64 -> Set w64 -> Set w64
 difference = liftSet2 Internal.difference
+
+splitMember :: w64 -> Set w64 -> (Set w64, Bool, Set w64)
+splitMember w (Set sw) =
+   case Internal.splitMember w sw of (l, mmbr, r) -> (Set l, mmbr, Set r)
 
 observe :: Set w64 -> Set Word64
 observe si@(Set _) = si

@@ -9,6 +9,7 @@ module Data.Set.Int64 (
 Int64Set, Set(..), singleton, toSet,
 insert, delete, alterF,
 intersection, union, difference,
+splitMember,
 toAscList, toDesList,
 ) where
 
@@ -35,6 +36,7 @@ instance Eq (Set i64) where
    Set sx == Set sy = sx == sy
 
 instance Ord (Set i64) where
+{-^ total lexicographic ordering (rather than partial subset ordering) -}
    compare sx sy = compare (toAscList (observe sx)) (toAscList (observe sy))
 
 instance Semigroup (Set i64) where
@@ -49,6 +51,7 @@ instance (i64 ~ Int64)=> Ext.IsList (Set i64) where
 
 instance Foldable Set where
    null (Set sw) = Internal.null sw
+   length (Set sw) = fromIntegral (Internal.size sw)
    foldMap = foldMap
    foldr = foldr
    foldr' = foldr'
@@ -95,55 +98,53 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
             choose False = Set deleted
 {-# INLINE alterFWith #-}
 
+hasNegativeBranch :: Internal.PrefixWithIndex -> Bool
+hasNegativeBranch pm = Internal.suffixOf pm == Internal.suffixBitMask
+
 foldMap :: (Monoid b)=> (i64 -> b) -> Set i64 -> b
 foldMap f (Set sx) = case sx of
    Internal.Branch pm l r
-      | Internal.suffixOf pm == Internal.suffixBitMask
+      | hasNegativeBranch pm
       -> Internal.foldMap f' r <> Internal.foldMap f' l
    _
       -> Internal.foldMap f' sx
-   where
-      f' = f . word64ToInt64
+   where f' = f . word64ToInt64
 
 foldr :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr f z (Set sx) = case sx of
    Internal.Branch pm l r
-      | Internal.suffixOf pm == Internal.suffixBitMask
+      | hasNegativeBranch pm
       -> Internal.foldr f' (Internal.foldr f' z l) r
    _
       -> Internal.foldr f' z sx
-   where
-      f' = f . word64ToInt64
+   where f' = f . word64ToInt64
 
 foldr' :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr' f z (Set sx) = case sx of
    Internal.Branch pm l r
-      | Internal.suffixOf pm == Internal.suffixBitMask
+      | hasNegativeBranch pm
       -> Internal.foldr' f' (Internal.foldr' f' z l) r
    _
       -> Internal.foldr' f' z sx
-   where
-      f' = f . word64ToInt64
+   where f' = f . word64ToInt64
 
 foldl :: (b -> i64 -> b) -> b -> Set i64 -> b
 foldl f z (Set sx) = case sx of
    Internal.Branch pm l r
-      | Internal.suffixOf pm == Internal.suffixBitMask
+      | hasNegativeBranch pm
       -> Internal.foldl f' (Internal.foldl f' z r) l
    _
       -> Internal.foldl f' z sx
-   where
-      f' z' x = f z' (word64ToInt64 x)
+   where f' z' x = f z' (word64ToInt64 x)
 
 foldl' :: (a -> i64 -> a) -> a -> Set i64 -> a
 foldl' f z (Set sx) = case sx of
    Internal.Branch pm l r
-      | Internal.suffixOf pm == Internal.suffixBitMask
+      | hasNegativeBranch pm
       -> Internal.foldl' f' (Internal.foldl' f' z r) l
    _
       -> Internal.foldl' f' z sx
-   where
-      f' z' x = f z' (word64ToInt64 x)
+   where f' z' x = f z' (word64ToInt64 x)
 
 toAscList :: Set i64 -> [i64]
 toAscList xs = Ext.build (\ c n -> foldr c n xs)
@@ -163,6 +164,19 @@ difference = liftSet2 Internal.difference
 
 nonintersection :: Set i64 -> Set i64 -> Set i64
 nonintersection = liftSet2 Internal.nonintersection
+
+splitMember :: i64 -> Set i64 -> (Set i64, Bool, Set i64)
+splitMember i (Set sw) = case sw of
+   Internal.Branch pm l r
+      | hasNegativeBranch pm
+      -> if i >= 0
+         then case Internal.splitMember (int64ToWord64 i) l of
+            (l', mmbr, r') -> (Set l', mmbr, Set (Internal.union r' r))
+         else case Internal.splitMember (int64ToWord64 i) r of
+            (l', mmbr, r') -> (Set (Internal.union l' l), mmbr, Set r')
+   _
+      -> case Internal.splitMember (int64ToWord64 i) sw of
+            (l, mmbr, r) -> (Set l, mmbr, Set r)
 
 observe :: Set a -> Set Int64
 observe si@(Set _) = si
