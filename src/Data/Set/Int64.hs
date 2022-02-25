@@ -6,7 +6,7 @@
    #-}
 
 module Data.Set.Int64 (
-Int64Set, Set(..), singleton, toSet,
+Int64Set, Set(..), singleton, fromList,
 insert, delete, alterF,
 intersection, union, difference,
 splitMember,
@@ -20,6 +20,7 @@ import Data.Word (Word64)
 import Data.Int (Int64)
 import qualified Data.Set.Word64.Internal as Internal
 import Prelude hiding (foldMap, foldl, foldr)
+import Text.Read
 import qualified GHC.Exts as Ext (IsList (..), build)
 
 type Int64Set = Set Int64
@@ -31,6 +32,13 @@ instance NFData1 Set where liftRnf _ = rwhnf
 instance Show (Set i64) where
    show si =
      "fromList " <> show (toAscList (observe si))
+
+instance (i64 ~ Int64)=> Read (Set i64) where
+   readPrec = parens $ prec 10 $ do
+      Ident "fromList" <- lexP
+      fmap fromList readPrec
+
+   readListPrec = readListPrecDefault
 
 instance Eq (Set i64) where
    Set sx == Set sy = sx == sy
@@ -67,6 +75,9 @@ singleton = Set . Internal.singleton . int64ToWord64
 
 toSet :: (Foldable.Foldable m)=> m Int64 -> Set Int64
 toSet = Foldable.foldl' (flip insert) mempty
+
+fromList :: [Int64] -> Set Int64
+fromList = toSet
 
 insert :: a -> Set a -> Set a
 insert !i (Set sx) = Set (Internal.insert (int64ToWord64 i) sx)
