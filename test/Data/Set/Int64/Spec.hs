@@ -3,6 +3,7 @@
 module Data.Set.Int64.Spec where
 
 import Data.Ord
+import Data.Foldable
 import Data.Functor.Const
 import Data.Functor.Identity
 import Data.Int (Int64)
@@ -51,3 +52,15 @@ prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
 prop_toAscList_sorted sx = toAscList sx == sort (toAscList sx)
 prop_toDesList_sorted sx = toDesList sx == sortOn Down (toAscList sx)
+
+prop_minimum_default :: Int64Set -> Bool
+prop_minimum_default sx =
+  foldl' (\ z x -> maybe (Just x) (Just . min x) z) Nothing sx
+  ==
+  if null sx then Nothing else Just (minimum sx)
+
+prop_maximum_default :: Int64Set -> Bool
+prop_maximum_default sx =
+  foldl' (\ z x -> maybe (Just x) (Just . max x) z) Nothing sx
+  ==
+  if null sx then Nothing else Just (maximum sx)

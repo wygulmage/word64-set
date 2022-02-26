@@ -99,3 +99,13 @@ main = hspec $ do
       describe "sorted" $ do
          "Word64" `it` property W64.prop_toDesList_sorted
          "Int64" `it` property I64.prop_toDesList_sorted
+
+   describe "maximum" $ do
+      describe "default" $ do
+         "Int64" `it` property I64.prop_maximum_default
+         "Word64" `it` property W64.prop_maximum_default
+
+   describe "minimum" $ do
+      describe "default" $ do
+         "Int64" `it` property I64.prop_minimum_default
+         "Word64" `it` property W64.prop_minimum_default
