@@ -2,4 +2,4 @@
 dist-newstyle/*
 .ghc.environment.*
 .stack-work/*
-.stack.yaml.lock
+stack.yaml.lock
