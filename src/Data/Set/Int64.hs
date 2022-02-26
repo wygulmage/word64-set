@@ -135,7 +135,7 @@ foldMap f (Set sx) = case sx of
 foldr :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr f z (Set sx) = case sx of
    Internal.Branch pm nat neg | hasNegativeBranch pm
-      -> Internal.foldr f' (Internal.foldr f' z neg) nat
+      -> Internal.foldr f' (Internal.foldr f' z nat) neg
    _
       -> Internal.foldr f' z sx
    where f' = f . word64ToInt64

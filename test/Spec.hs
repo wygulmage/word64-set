@@ -78,9 +78,16 @@ main = hspec $ do
          "Word64Set" `it` property W64.prop_difference_empty_2
 
    describe "to/from list" $ do
-      "Int64" `it` property I64.prop_to_from_list_identity
-      "Word64" `it` property W64.prop_to_from_list_identity
+      describe "identity" $ do
+         "Int64" `it` property I64.prop_to_from_list_identity
+         "Word64" `it` property W64.prop_to_from_list_identity
 
+   describe "toAscList" $ do
+      describe "sorted" $ do
+         "Word64" `it` property W64.prop_toAscList_sorted
+         "Int64" `it` property I64.prop_toAscList_sorted
 
-instance Arbitrary Internal.Tree where
-   arbitrary = fmap Internal.fromList arbitrary
+   describe "toDesList" $ do
+      describe "sorted" $ do
+         "Word64" `it` property W64.prop_toDesList_sorted
+         "Int64" `it` property I64.prop_toDesList_sorted

@@ -2,9 +2,11 @@
 
 module Data.Set.Word64.Spec where
 
+import Data.Ord
 import Data.Functor.Const
 import Data.Functor.Identity
 import Data.Word (Word64)
+import Data.List (sort, sortOn)
 import Data.Set.Word64
 import Test.QuickCheck
 
@@ -40,3 +42,6 @@ prop_difference_empty_1 sx = difference mempty sx == mempty
 prop_difference_empty_2 sx = difference sx mempty == sx
 
 prop_to_from_list_identity sx = sx == fromList (toDesList sx)
+
+prop_toAscList_sorted sx = toAscList sx == sort (toAscList sx)
+prop_toDesList_sorted sx = toDesList sx == sortOn Down (toAscList sx)
