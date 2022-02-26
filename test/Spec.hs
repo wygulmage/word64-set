@@ -77,6 +77,14 @@ main = hspec $ do
          "Int64Set" `it` property I64.prop_difference_empty_2
          "Word64Set" `it` property W64.prop_difference_empty_2
 
+   describe "splitMember" $ do
+      describe "member" $ do
+         "Word64" `it` property W64.prop_splitMember_member
+         "Int64" `it` property I64.prop_splitMember_member
+      describe "not member" $ do
+         "Word64" `it` property W64.prop_splitMember_not_member
+         "Int64" `it` property I64.prop_splitMember_not_member
+
    describe "to/from list" $ do
       describe "identity" $ do
          "Int64" `it` property I64.prop_to_from_list_identity

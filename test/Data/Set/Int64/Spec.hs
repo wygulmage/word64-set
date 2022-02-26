@@ -41,6 +41,12 @@ prop_difference_self sx = difference sx sx == mempty
 prop_difference_empty_1 sx = difference mempty sx == mempty
 prop_difference_empty_2 sx = difference sx mempty == sx
 
+
+prop_splitMember_member x sx = elem x sx == case splitMember x sx of (_, b, _) -> b
+prop_splitMember_not_member x sx =
+   case splitMember x sx of (sl, _, sg) -> not (elem x sl || elem x sg)
+
+
 prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
 prop_toAscList_sorted sx = toAscList sx == sort (toAscList sx)

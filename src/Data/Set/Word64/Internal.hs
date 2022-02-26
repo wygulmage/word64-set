@@ -490,27 +490,27 @@ size = foldl'Leaves (\ z _ m -> z + fromIntegral (popCount m)) 0
 splitMember :: Word64 -> Tree -> (Tree, Bool, Tree)
 splitMember w sw = case sw of
    Branch pm l r
-      | not (nomatch w (prefixOf pm) (bitmapOf pm))
-      -> if zero w (bitmapOf pm)
+      | not (nomatch w pre bmp)
+      -> if zero w bmp
          then case splitMember w l of (l', mmbr, r') -> (l', mmbr, union r' r)
          else case splitMember w r of (l', mmbr, r') -> (union l l', mmbr, r')
       | otherwise
-      -> if w < prefixOf pm
+      -> if w < pre
          then (empty, False, sw)
          else (sw, False, empty)
+      where
+         pre = prefixOf pm
+         bmp = bitmapOf pm
    Leaf pre bmp
-      | pre > w
-      -> (empty, False, sw)
-      | pre < prefixOf w
-      -> (sw, False, empty)
-      | otherwise
-      -> let
-            l = leaf pre (bmp .&. lowBmp)
-            mmbr = not (disjointBits bmp bmpw)
-            r = leaf pre (bmp .&. highBmp)
+      | pre > prefixOf w -> (empty, False, sw)
+      | pre < prefixOf w -> (sw, False, empty)
+      | otherwise        -> let
+            !mmbr = not (disjointBits bmp bmpw)
+            !l = leaf pre (bmp .&. lowBmp)
+            !r = leaf pre (bmp .&. highBmp)
             bmpw = bitmapOf w
             lowBmp = bmpw - 1
-            highBmp = complement (lowBmp + bmp)
+            highBmp = complement (lowBmp + bmpw)
          in (l, mmbr, r)
    Seed
       -> (Seed, False, Seed)
