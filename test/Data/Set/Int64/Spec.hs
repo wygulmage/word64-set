@@ -64,3 +64,9 @@ prop_maximum_default sx =
   foldl' (\ z x -> maybe (Just x) (Just . max x) z) Nothing sx
   ==
   if null sx then Nothing else Just (maximum sx)
+
+prop_null :: Int64Set -> Bool
+prop_null sx = null sx == (sx == mempty)
+
+prop_show_read :: Int64Set -> Bool
+prop_show_read sx = read (show sx) == sx

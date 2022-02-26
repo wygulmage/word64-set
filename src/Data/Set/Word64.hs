@@ -17,7 +17,6 @@ toAscList, toDesList,
 import Control.DeepSeq
 import Data.Semigroup
 import Data.Foldable
-import qualified Data.Foldable as Foldable
 import Data.Word (Word64)
 import qualified Data.Set.Word64.Internal as Internal
 import Text.Read

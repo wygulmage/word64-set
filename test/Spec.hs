@@ -79,11 +79,11 @@ main = hspec $ do
 
    describe "splitMember" $ do
       describe "member" $ do
-         "Word64" `it` property W64.prop_splitMember_member
          "Int64" `it` property I64.prop_splitMember_member
+         "Word64" `it` property W64.prop_splitMember_member
       describe "not member" $ do
-         "Word64" `it` property W64.prop_splitMember_not_member
          "Int64" `it` property I64.prop_splitMember_not_member
+         "Word64" `it` property W64.prop_splitMember_not_member
 
    describe "to/from list" $ do
       describe "identity" $ do
@@ -92,13 +92,13 @@ main = hspec $ do
 
    describe "toAscList" $ do
       describe "sorted" $ do
-         "Word64" `it` property W64.prop_toAscList_sorted
          "Int64" `it` property I64.prop_toAscList_sorted
+         "Word64" `it` property W64.prop_toAscList_sorted
 
    describe "toDesList" $ do
       describe "sorted" $ do
-         "Word64" `it` property W64.prop_toDesList_sorted
          "Int64" `it` property I64.prop_toDesList_sorted
+         "Word64" `it` property W64.prop_toDesList_sorted
 
    describe "maximum" $ do
       describe "default" $ do
@@ -109,3 +109,12 @@ main = hspec $ do
       describe "default" $ do
          "Int64" `it` property I64.prop_minimum_default
          "Word64" `it` property W64.prop_minimum_default
+
+   describe "null" $ do
+      "Int64" `it` property I64.prop_null
+      "Word64" `it` property W64.prop_null
+
+   describe "read, show" $ do
+      describe "read . show === id" $ do
+         "Int64" `it` property I64.prop_show_read
+         "Word64" `it` property W64.prop_show_read
