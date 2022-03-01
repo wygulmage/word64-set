@@ -16,30 +16,20 @@ main = hspec $ do
       "not (member x (delete x sx))" `it` property prop_member_delete
 
    describe "alterF" $ do
-      describe "identity" $ do
-         "Int64Set" `it` property prop_alterF_identity
-      describe "member" $ do
-         "Int64Set" `it` property prop_alterF_member
-      describe "insert" $ do
-         "Int64Set" `it` property prop_alterF_insert
-      describe "delete" $ do
-         "Int64Set" `it` property prop_alterF_delete
+      "identity" `it` property prop_alterF_identity
+      "member" `it` property prop_alterF_member
+      "insert" `it` property prop_alterF_insert
+      "delete" `it` property prop_alterF_delete
 
    describe "union" $ do
-      describe "commutative" $ do
-         "Int64Set" `it` property prop_union_commutative
-      describe "self" $ do
-         "Int64Set" `it` property prop_union_self
-      describe "empty" $ do
-         "Int64Set" `it` property prop_union_empty
+      "commutative" `it` property prop_union_commutative
+      "self" `it` property prop_union_self
+      "empty" `it` property prop_union_empty
 
    describe "intersection" $ do
-      describe "commutative" $ do
-         "Int64Set" `it` property prop_intersection_commutative
-      describe "self" $ do
-         "Int64Set" `it` property prop_intersection_self
-      describe "empty" $ do
-         "Int64Set" `it` property prop_intersection_empty
+      "commutative" `it` property prop_intersection_commutative
+      "self" `it` property prop_intersection_self
+      "empty" `it` property prop_intersection_empty
 
    describe "difference" $ do
       "difference sx sx = empty" `it` property prop_difference_self
@@ -55,24 +45,19 @@ main = hspec $ do
       "identity" `it` property prop_to_from_list_identity
 
    describe "toAscList" $ do
-      describe "sorted" $ do
-         "Int64" `it` property prop_toAscList_sorted
+      "sorted" `it` property prop_toAscList_sorted
 
    describe "toDesList" $ do
-      describe "sorted" $ do
-         "Int64" `it` property prop_toDesList_sorted
+      "sorted" `it` property prop_toDesList_sorted
 
    describe "maximum" $ do
-      describe "default" $ do
-         "Int64" `it` property prop_maximum_default
+      "default" `it` property prop_maximum_default
 
    describe "minimum" $ do
-      describe "default" $ do
-         "Int64" `it` property prop_minimum_default
+      "default" `it` property prop_minimum_default
 
    describe "null" $ do
-      "Int64" `it` property prop_null
+      "is empty" `it` property prop_null
 
    describe "read, show" $ do
-      describe "read . show === id" $ do
-         "Int64" `it` property prop_show_read
+      "read . show === id" `it` property prop_show_read
