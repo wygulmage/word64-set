@@ -36,9 +36,8 @@ test-suite test
    main-is: Spec.hs
    other-modules:
       Data.Set.Int64.Spec
-      Data.Set.Word64.Spec
    build-depends:
       base >=4.13 && <4.14
     , QuickCheck
     , hspec
-    , word64-set
+    , int64-set

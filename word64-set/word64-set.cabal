@@ -21,7 +21,6 @@ library
    exposed-modules:
       Data.Set.Word64.Internal
       Data.Set.Word64
-      Data.Set.Int64
    -- other-modules:
    -- other-extensions:
    build-depends:
@@ -36,7 +35,6 @@ test-suite test
    type: exitcode-stdio-1.0
    main-is: Spec.hs
    other-modules:
-      Data.Set.Int64.Spec
       Data.Set.Word64.Spec
    build-depends:
       base >=4.13 && <4.14
