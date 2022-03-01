@@ -5,6 +5,8 @@
            , ScopedTypeVariables
    #-}
 
+-- Honestly I'm tempted to put this in another package (say, 'int64-set'?).
+
 module Data.Set.Int64 (
 Int64Set, Set(..), empty, singleton, fromList,
 insert, delete, alterF,
@@ -108,13 +110,13 @@ alterFWith ::
 -}
 alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alterF') more reliable.
    where
-      go i (Set sx) = choose `mapper` f member_
+      go i (Set sx) = choose `mapper` f found
          where
             x = int64ToWord64 i
             -- Reuse the information you have!
-            member_ = Internal.member x sx
+            found = Internal.member x sx
             (inserted, deleted)
-               | member_ = (sx, Internal.delete x sx)
+               | found     = (sx, Internal.delete x sx)
                | otherwise = (Internal.insert x sx, sx)
             choose True = Set inserted
             choose False = Set deleted
@@ -185,16 +187,22 @@ nonintersection = liftSet2 Internal.nonintersection
 
 splitMember :: i64 -> Set i64 -> (Set i64, Bool, Set i64)
 splitMember i (Set sw) = case sw of
-   Internal.Branch pm l r
-      | hasNegativeBranch pm
+   Internal.Branch pm ge0 lt0 | hasNegativeBranch pm
       -> if i >= 0
-         then case Internal.splitMember (int64ToWord64 i) l of
-            (l', mmbr, r') -> (Set l', mmbr, Set (Internal.union r' r))
-         else case Internal.splitMember (int64ToWord64 i) r of
-            (l', mmbr, r') -> (Set (Internal.union l' l), mmbr, Set r')
+         -- Search for i in the non-negative values and put the negative values in the 'less than' set.
+         then case Internal.splitMember (int64ToWord64 i) ge0 of
+            (lt, found, gt) -> (Set (Internal.union lt0 lt), found, Set gt)
+         -- Search for i in the negative values and split the negative values between the 'less than' set and the 'greater than' set.
+         else case Internal.splitMember (int64ToWord64 i) lt0 of
+            (lt, found, gt) -> (Set lt, found, Set (Internal.union gt ge0))
+   Internal.Leaf p m
+      | word64ToInt64 p < 0 && i >= 0 -- all values in set are less than zero.
+      -> (Set sw, False, empty)
+      | word64ToInt64 p >= 0 && i < 0 -- all values in set are greater than zero.
+      -> (empty, False, Set sw)
    _
       -> case Internal.splitMember (int64ToWord64 i) sw of
-            (l, mmbr, r) -> (Set l, mmbr, Set r)
+            (l, found, r) -> (Set l, found, Set r)
 
 observe :: Set a -> Set Int64
 observe si@(Set _) = si

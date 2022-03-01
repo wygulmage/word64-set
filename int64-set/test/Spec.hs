@@ -2,94 +2,77 @@
 
 import Test.Hspec
 import Test.QuickCheck
-import Data.Foldable
-import Data.Word (Word64)
-import Data.Int (Int64)
-import Data.Functor.Const
-import Data.Functor.Identity
-import qualified Data.Set.Int64 as Int64
-import qualified Data.Set.Int64.Spec as I64
+import Data.Set.Int64.Spec
 
 main :: IO ()
 main = hspec $ do
    describe "==" $ do
-      describe "sx == sx" $ do
-         "Int64Set sx == sx" `it` property I64.prop_equal_self
-      describe "(toList sx == toList sy) == (sx == sy)" $ do
-         "Int64Set" `it` property I64.prop_toList_eq
+      "sx == sx" `it` property prop_equal_self
+      "(toList sx == toList sy) == (sx == sy)" `it` property prop_toList_eq
 
    describe "elem, insert, delete" $ do
-      describe "member singleton" $ do
-         "Int64" `it` property I64.prop_member_singleton
-      describe "member x (insert x sx)" $ do
-         "Int64Set" `it` property I64.prop_member_insert
-      describe "not (member x (delete x sx))" $ do
-         "Int64Set" `it` property I64.prop_member_delete
+      "member singleton" `it` property prop_member_singleton
+      "member x (insert x sx)" `it` property prop_member_insert
+      "not (member x (delete x sx))" `it` property prop_member_delete
 
    describe "alterF" $ do
       describe "identity" $ do
-         "Int64Set" `it` property I64.prop_alterF_identity
+         "Int64Set" `it` property prop_alterF_identity
       describe "member" $ do
-         "Int64Set" `it` property I64.prop_alterF_member
+         "Int64Set" `it` property prop_alterF_member
       describe "insert" $ do
-         "Int64Set" `it` property I64.prop_alterF_insert
+         "Int64Set" `it` property prop_alterF_insert
       describe "delete" $ do
-         "Int64Set" `it` property I64.prop_alterF_delete
+         "Int64Set" `it` property prop_alterF_delete
 
    describe "union" $ do
       describe "commutative" $ do
-         "Int64Set" `it` property I64.prop_union_commutative
+         "Int64Set" `it` property prop_union_commutative
       describe "self" $ do
-         "Int64Set" `it` property I64.prop_union_self
+         "Int64Set" `it` property prop_union_self
       describe "empty" $ do
-         "Int64Set" `it` property I64.prop_union_empty
+         "Int64Set" `it` property prop_union_empty
 
    describe "intersection" $ do
       describe "commutative" $ do
-         "Int64Set" `it` property I64.prop_intersection_commutative
+         "Int64Set" `it` property prop_intersection_commutative
       describe "self" $ do
-         "Int64Set" `it` property I64.prop_intersection_self
+         "Int64Set" `it` property prop_intersection_self
       describe "empty" $ do
-         "Int64Set" `it` property I64.prop_intersection_empty
+         "Int64Set" `it` property prop_intersection_empty
 
    describe "difference" $ do
-      describe "self" $ do
-         "Int64Set" `it` property I64.prop_difference_self
-      describe "difference empty" $ do
-         "Int64Set" `it` property I64.prop_difference_empty_1
-      describe "(`difference` empty)" $ do
-         "Int64Set" `it` property I64.prop_difference_empty_2
+      "difference sx sx = empty" `it` property prop_difference_self
+      "difference empty" `it` property prop_difference_empty_1
+      "(`difference` empty)" `it` property prop_difference_empty_2
 
    describe "splitMember" $ do
-      describe "member" $ do
-         "Int64" `it` property I64.prop_splitMember_member
-      describe "not member" $ do
-         "Int64" `it` property I64.prop_splitMember_not_member
+      "member" `it` property prop_splitMember_member
+      "not member" `it` property prop_splitMember_not_member
+      "ordered" `it` property prop_splitMember_ordered
 
    describe "to/from list" $ do
-      describe "identity" $ do
-         "Int64" `it` property I64.prop_to_from_list_identity
+      "identity" `it` property prop_to_from_list_identity
 
    describe "toAscList" $ do
       describe "sorted" $ do
-         "Int64" `it` property I64.prop_toAscList_sorted
+         "Int64" `it` property prop_toAscList_sorted
 
    describe "toDesList" $ do
       describe "sorted" $ do
-         "Int64" `it` property I64.prop_toDesList_sorted
+         "Int64" `it` property prop_toDesList_sorted
 
    describe "maximum" $ do
       describe "default" $ do
-         "Int64" `it` property I64.prop_maximum_default
+         "Int64" `it` property prop_maximum_default
 
    describe "minimum" $ do
       describe "default" $ do
-         "Int64" `it` property I64.prop_minimum_default
+         "Int64" `it` property prop_minimum_default
 
    describe "null" $ do
-      "Int64" `it` property I64.prop_null
+      "Int64" `it` property prop_null
 
    describe "read, show" $ do
       describe "read . show === id" $ do
-         "Int64" `it` property I64.prop_show_read
-
+         "Int64" `it` property prop_show_read

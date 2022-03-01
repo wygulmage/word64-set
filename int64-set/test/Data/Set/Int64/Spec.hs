@@ -16,11 +16,11 @@ instance (i64 ~ Int64)=> Arbitrary (Set i64) where
 
 prop_equal_self :: Int64Set -> Bool
 prop_equal_self sw = sw == sw
+prop_toList_eq :: Int64Set -> Int64Set -> Bool
+prop_toList_eq sx sy = (sx == sy) == (toList sx == toList sy)
 
 prop_member_singleton w = elem w (singleton w)
-
 prop_member_insert w sw = elem w (insert w sw)
-
 prop_member_delete w sw = not (elem w (delete w sw))
 
 prop_alterF_member w sw = getConst (alterF Const w sw) == elem w sw
@@ -46,6 +46,8 @@ prop_difference_empty_2 sx = difference sx mempty == sx
 prop_splitMember_member x sx = elem x sx == case splitMember x sx of (_, b, _) -> b
 prop_splitMember_not_member x sx =
    case splitMember x sx of (sl, _, sg) -> not (elem x sl || elem x sg)
+prop_splitMember_ordered x sx =
+   case splitMember x sx of (sl, _, sg) -> all (x >) sl && all (x <) sg
 
 
 prop_to_from_list_identity sx = sx == fromList (toDesList sx)
@@ -70,6 +72,3 @@ prop_null sx = null sx == (sx == mempty)
 
 prop_show_read :: Int64Set -> Bool
 prop_show_read sx = read (show sx) == sx
-
-prop_toList_eq :: Int64Set -> Int64Set -> Bool
-prop_toList_eq sx sy = (sx == sy) == (toList sx == toList sy)
