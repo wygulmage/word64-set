@@ -133,43 +133,43 @@ deleteBM p' m' sx = case sx of
    Seed
       -> Seed
 
-alterF ::
-   (Functor m)=> (Bool -> m Bool) -> Word64 -> Tree -> m Tree
-{-^ Determine whether a 'Word64' is in a @'Set' 'Word64'@, and based on that decide what to do with that 'Word64' in the set.
-@runIdentity . alterF (pure (pure True)) x@ is like @'insert' x@, except it does not create a new set if @x@ is already in the set.
-@runIdentity . alterF (pure (pure False)) x@ is like @'delete' x@, except it does not create a new set if @x@ is not in the set.
-@getConst . alterF Const x@ is equivalent to @'member' x@.
--}
-alterF f = alterFWith fmap f -- N.B. if this is not eta-expanded, alterFWith won't inline and specialization won't happen.
-{-# INLINABLE alterF #-}
+-- alterF ::
+--    (Functor m)=> (Bool -> m Bool) -> Word64 -> Tree -> m Tree
+-- {-^ Determine whether a 'Word64' is in a @'Set' 'Word64'@, and based on that decide what to do with that 'Word64' in the set.
+-- @runIdentity . alterF (pure (pure True)) x@ is like @'insert' x@, except it does not create a new set if @x@ is already in the set.
+-- @runIdentity . alterF (pure (pure False)) x@ is like @'delete' x@, except it does not create a new set if @x@ is not in the set.
+-- @getConst . alterF Const x@ is equivalent to @'member' x@.
+-- -}
+-- alterF f = alterFWith fmap f -- N.B. if this is not eta-expanded, alterFWith won't inline and specialization won't happen.
+-- {-# INLINABLE alterF #-}
 
--- Specialize to 'member':
-{-# SPECIALIZE alterF :: (Bool -> Const Bool Bool) -> Word64 -> Tree -> Const Bool Tree #-}
--- Specialize to 'alter':
-{-# SPECIALIZE alterF :: (Bool -> Identity Bool) -> Word64 -> Tree -> Identity Tree #-}
--- Specialize to 'lookupAlter'
-{-# SPECIALIZE alterF :: (Bool -> (Bool, Bool)) -> Word64 -> Tree -> (Bool, Tree) #-}
+-- -- Specialize to 'member':
+-- {-# SPECIALIZE alterF :: (Bool -> Const Bool Bool) -> Word64 -> Tree -> Const Bool Tree #-}
+-- -- Specialize to 'alter':
+-- {-# SPECIALIZE alterF :: (Bool -> Identity Bool) -> Word64 -> Tree -> Identity Tree #-}
+-- -- Specialize to 'lookupAlter'
+-- {-# SPECIALIZE alterF :: (Bool -> (Bool, Bool)) -> Word64 -> Tree -> (Bool, Tree) #-}
 
 
-alterFWith ::
-   forall m.
-   (forall x y. (x -> y) -> m x -> m y) ->
-   (Bool -> m Bool) ->
-   Word64 -> Tree -> m Tree
-{-^ @alterFWith@ provides a version of 'alterF' that you can use with an alternative 'Functor' class.
--}
-alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alterF') more reliable.
-   where
-      go x sx = choose `mapper` f member_
-         where
-            -- Reuse the information you have!
-            member_ = member x sx
-            (inserted, deleted)
-               | member_ = (sx, delete x sx)
-               | otherwise = (insert x sx, sx)
-            choose True = inserted
-            choose False = deleted
-{-# INLINE alterFWith #-}
+-- alterFWith ::
+--    forall m.
+--    (forall x y. (x -> y) -> m x -> m y) ->
+--    (Bool -> m Bool) ->
+--    Word64 -> Tree -> m Tree
+-- {-^ @alterFWith@ provides a version of 'alterF' that you can use with an alternative 'Functor' class.
+-- -}
+-- alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alterF') more reliable.
+--    where
+--       go x sx = choose `mapper` f member_
+--          where
+--             -- Reuse the information you have!
+--             member_ = member x sx
+--             (inserted, deleted)
+--                | member_ = (sx, delete x sx)
+--                | otherwise = (insert x sx, sx)
+--             choose True = inserted
+--             choose False = deleted
+-- {-# INLINE alterFWith #-}
 
 ------ Combine Sets ------
 
