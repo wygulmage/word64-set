@@ -345,33 +345,35 @@ foldMapLeaves f = loop
       loop Seed = mempty
       loop (Leaf p m) = f p m
       loop (Branch _ l r) = loop l <> loop r
-{-# INLINABLE foldMapLeaves #-}
+{-# INLINE foldMapLeaves #-}
 
 foldMap ::
    forall b. (Monoid b)=> (Word64 -> b) -> Tree -> b
 foldMap = foldMapLeaves . foldMapBits
-{-# INLINABLE foldMap #-}
+{-# INLINE foldMap #-}
 -- @foldMap@ tries to be a little smart. @foldMap@ 'Data.Monoid.Last' will only traverse the right 'Branch'es, although it will still traverse all the elements of a 'Leaf'.
 
 foldr :: forall a. (Word64 -> a -> a) -> a -> Tree -> a
 foldr f = foldrLeaves (\ p m z -> foldrBits f z p m)
-{-# INLINE [0] foldr #-}
+{-# INLINE foldr #-}
 
 foldrLeaves :: forall b. (Prefix -> BitMap -> b -> b) -> b -> Tree -> b
 foldrLeaves f z sw = case sw of
    Seed -> z
    Leaf p m -> f p m z
    Branch _ l r -> foldrLeaves f (foldrLeaves f z r) l
+{-# INLINE foldrLeaves #-}
 
 foldlLeaves :: forall b. (b -> Prefix -> BitMap -> b) -> b -> Tree -> b
 foldlLeaves f z sw = case sw of
    Seed -> z
    Leaf p m -> f z p m
    Branch _ l r -> foldlLeaves f (foldlLeaves f z l) r
+{-# INLINE foldlLeaves #-}
 
 foldl :: forall b. (b -> Word64 -> b) -> b -> Tree -> b
 foldl f = foldlLeaves (\ z p m -> foldlBits f z p m) -- This helps the function inline. (e.g. 'lookupMax')
-{-# INLINE [0] foldl #-}
+{-# INLINE foldl #-}
 
 foldlBits :: forall a. (a -> Word64 -> a) -> a -> Prefix -> BitMap -> a
 {-^ Fold over the Word64s in a BitMap lazily, from highest to lowest. -}
@@ -392,9 +394,11 @@ foldr'Leaves f = loop
          Seed -> z
          Leaf p m -> f p m z
          Branch _ l r -> loop (loop z r) l
+{-# INLINE foldr'Leaves #-}
 
 foldr' :: forall b. (Word64 -> b -> b) -> b -> Tree -> b
 foldr' f = foldr'Leaves (\ p m z -> foldr'Bits f z p m)
+{-# INLINE foldr' #-}
 
 foldr'Bits :: forall a. (Word64 -> a -> a) -> a -> Prefix -> BitMap -> a
 foldr'Bits f z p = loop z
@@ -414,9 +418,11 @@ foldl'Leaves f = loop
          Seed -> z
          Leaf p m -> f z p m
          Branch _ l r -> loop (loop z l) r
+{-# INLINE foldl'Leaves #-}
 
 foldl' :: forall b. (b -> Word64 -> b) -> b -> Tree -> b
 foldl' = foldl'Leaves . foldl'Bits
+{-# INLINE foldl' #-}
 
 foldl'Bits :: forall a. (a -> Word64 -> a) -> a -> Prefix -> BitMap -> a
 {-^ Fold over all the Word64s in a BitMap strictly, from lowest to highest. -}
@@ -450,9 +456,12 @@ foldMapBits f = foldrBits ((<>) . f) mempty
 lookupMax, lookupMin :: Tree -> Maybe Word64
 lookupMax = foldl (\ _ x -> Just x) Nothing
 lookupMin = foldr (\ x _ -> Just x) Nothing
+{-# INLINE lookupMax #-}
+{-# INLINE lookupMin #-}
 
 size :: Tree -> Word64
 size = foldl'Leaves (\ z _ m -> z + fromIntegral (popCount m)) 0
+{-# INLINE size #-}
 
 splitMember :: Word64 -> Tree -> (Tree, Bool, Tree)
 splitMember w sw = case sw of
@@ -481,13 +490,16 @@ splitMember w sw = case sw of
          in (l, mmbr, r)
    Seed
       -> (Seed, False, Seed)
+{-# INLINE splitMember #-}
 
 ------ Internal ------
 
 bitmapOf :: Word64 -> BitIndex
 bitmapOf = bitmapOfSuffix . suffixOf
    where
-      bitmapOfSuffix = bit . word64ToInt
+      -- bitmapOfSuffix = bit . word64ToInt
+      bitmapOfSuffix = unsafeShiftL 1 . word64ToInt -- don't need safety here; suffix is at most 63.
+{-# INLINE bitmapOf #-}
 
 prefixOf :: Word64 -> Prefix
 prefixOf = (.&.) prefixBitMask

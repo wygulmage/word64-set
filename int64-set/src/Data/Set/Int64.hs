@@ -125,6 +125,7 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
 {-# INLINE alterFWith #-}
 
 hasSignSplit :: Internal.PrefixWithIndex -> Bool
+-- If the suffix is 63, the prefix must be 0, so the whole value is 63.
 hasSignSplit pm = pm == Internal.suffixBitMask -- 63
 {-# INLINE hasSignSplit #-}
 
