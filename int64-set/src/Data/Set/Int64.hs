@@ -5,7 +5,6 @@
            , ScopedTypeVariables
    #-}
 
--- Honestly I'm tempted to put this in another package (say, 'int64-set'?).
 
 module Data.Set.Int64 (
 Int64Set, Set(..), empty, singleton, fromList,
@@ -15,6 +14,7 @@ splitMember,
 toAscList, toDesList,
 ) where
 
+
 import Control.DeepSeq
 import Data.Semigroup
 import qualified Data.Foldable as Foldable
@@ -23,7 +23,8 @@ import Data.Int (Int64)
 import qualified Data.Set.Word64.Internal as Internal
 import Prelude hiding (foldMap, foldl, foldr)
 import Text.Read
-import qualified GHC.Exts as Ext (IsList (..), build)
+import qualified GHC.Exts as Ext
+
 
 type Int64Set = Set Int64
 data Set i64 where Set :: !Internal.Tree -> Set Int64
@@ -118,25 +119,27 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
             (inserted, deleted)
                | found     = (sx, Internal.delete x sx)
                | otherwise = (Internal.insert x sx, sx)
-            choose True = Set inserted
-            choose False = Set deleted
+            choose b
+               | b         = Set inserted
+               | otherwise = Set deleted
 {-# INLINE alterFWith #-}
 
-hasNegativeBranch :: Internal.PrefixWithIndex -> Bool
-hasNegativeBranch pm = Internal.suffixOf pm == Internal.suffixBitMask -- 63
-{-# INLINE hasNegativeBranch #-}
+hasSignSplit :: Internal.PrefixWithIndex -> Bool
+hasSignSplit pm = pm == Internal.suffixBitMask -- 63
+{-# INLINE hasSignSplit #-}
 
 foldMap :: (Monoid b)=> (i64 -> b) -> Set i64 -> b
 foldMap f (Set sx) = case sx of
-   Internal.Branch pm nat neg | hasNegativeBranch pm
+   Internal.Branch pm nat neg | hasSignSplit pm
       -> Internal.foldMap f' neg <> Internal.foldMap f' nat
    _
-      -> Internal.foldMap f' sx
+      -> Ext.inline Internal.foldMap f' sx
    where f' = f . word64ToInt64
+{-# INLINABLE foldMap #-}
 
 foldr :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | hasNegativeBranch pm
+   Internal.Branch pm nat neg | pm == 63
       -> Internal.foldr f' (Internal.foldr f' z nat) neg
    _
       -> Internal.foldr f' z sx
@@ -144,7 +147,7 @@ foldr f z (Set sx) = case sx of
 
 foldr' :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr' f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | hasNegativeBranch pm
+   Internal.Branch pm nat neg | pm == 63
       -> Internal.foldr' f' (Internal.foldr' f' z nat) neg
    _
       -> Internal.foldr' f' z sx
@@ -152,7 +155,7 @@ foldr' f z (Set sx) = case sx of
 
 foldl :: (b -> i64 -> b) -> b -> Set i64 -> b
 foldl f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | hasNegativeBranch pm
+   Internal.Branch pm nat neg | pm == 63
       -> Internal.foldl f' (Internal.foldl f' z neg) nat
    _
       -> Internal.foldl f' z sx
@@ -160,7 +163,7 @@ foldl f z (Set sx) = case sx of
 
 foldl' :: (a -> i64 -> a) -> a -> Set i64 -> a
 foldl' f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | hasNegativeBranch pm
+   Internal.Branch pm nat neg | pm == 63
       -> Internal.foldl' f' (Internal.foldl' f' z neg) nat
    _
       -> Internal.foldl' f' z sx
@@ -185,21 +188,33 @@ difference = liftSet2 Internal.difference
 nonintersection :: Set i64 -> Set i64 -> Set i64
 nonintersection = liftSet2 Internal.nonintersection
 
+negativeBranch :: Internal.PrefixWithIndex -> Bool
+negativeBranch pm =
+   word64ToInt64 pm < 0
+{-# INLINE negativeBranch #-}
+
+-- In a `Branch pm l r`, if pm == 63 then it's the root branch, l is nonnegative, and r is negative; if word64ToInt64 pm < 0, both l and r are negative.
+
 splitMember :: i64 -> Set i64 -> (Set i64, Bool, Set i64)
 splitMember i (Set sw) = case sw of
-   Internal.Branch pm ge0 lt0 | hasNegativeBranch pm
+   Internal.Branch pm nat neg | pm == 63 -- root branch; nat is non-negative and neg is negative.
       -> if i >= 0
-         -- Search for i in the non-negative values and put the negative values in the 'less than' set.
-         then case Internal.splitMember (int64ToWord64 i) ge0 of
-            (lt, found, gt) -> (Set (Internal.union lt0 lt), found, Set gt)
+         -- Search for i in the non-negative branch and put the negative values in the 'less than' set.
+         then case Internal.splitMember (int64ToWord64 i) nat of
+            (lt, found, gt) -> (Set (Internal.union neg lt), found, Set gt)
          -- Search for i in the negative values and split the negative values between the 'less than' set and the 'greater than' set.
-         else case Internal.splitMember (int64ToWord64 i) lt0 of
-            (lt, found, gt) -> (Set lt, found, Set (Internal.union gt ge0))
-   Internal.Leaf p m
-      | word64ToInt64 p < 0 && i >= 0 -- all values in set are less than zero.
-      -> (Set sw, False, empty)
-      | word64ToInt64 p >= 0 && i < 0 -- all values in set are greater than zero.
-      -> (empty, False, Set sw)
+         else case Internal.splitMember (int64ToWord64 i) neg of
+            (lt, found, gt) -> (Set lt, found, Set (Internal.union gt nat))
+   Internal.Branch pm _ _
+         | word64ToInt64 pm < 0  &&  i >= 0
+         -> (Set sw, False, mempty)
+         | word64ToInt64 pm >= 0  &&  i < 0
+         -> (mempty, False, Set sw)
+   Internal.Leaf p _
+         | word64ToInt64 p < 0  &&  i >= 0
+         -> (Set sw, False, mempty)
+         | word64ToInt64 p >= 0  &&  i < 0
+         -> (mempty, False, Set sw)
    _
       -> case Internal.splitMember (int64ToWord64 i) sw of
             (l, found, r) -> (Set l, found, Set r)

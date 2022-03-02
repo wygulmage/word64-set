@@ -65,6 +65,12 @@ spec = do
    describe "null" $ do
       "is empty" `it` property prop_null
 
+   describe "foldl'" $ do
+      "is strict foldl" `it` property prop_foldl'_is_strict_foldl
+
+   describe "foldr'" $ do
+      "is strict foldr" `it` property prop_foldr'_is_strict_foldr
+
    describe "read, show" $ do
       "read . show === id" `it` property prop_show_read
 
@@ -82,7 +88,7 @@ prop_insert_elem x sx = elem x (insert x sx)
 prop_delete_elem x sx = not (elem x (delete x sx))
 prop_insert_delete x sx =
    elem x sx' && -- insert inserts.
-   not (elem x sx'') && -- delete deletes.
+   notElem x sx'' && -- delete deletes.
    ((sx'' == sx)  /=  (sx' == sx)) -- insert only inserts and delete only deletes.
    where
       sx' = insert x sx
@@ -147,6 +153,12 @@ prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
 prop_toAscList_sorted sx = toAscList sx == sort (toAscList sx)
 prop_toDesList_sorted sx = toDesList sx == sortOn Down (toAscList sx)
+
+prop_foldl'_is_strict_foldl sx =
+   foldl' (flip (:)) [] sx == toDesList sx
+
+prop_foldr'_is_strict_foldr sx =
+   foldr' (:) [] sx == toAscList sx
 
 prop_minimum_default :: Int64Set -> Bool
 prop_minimum_default sx =

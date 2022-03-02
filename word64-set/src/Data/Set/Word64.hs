@@ -5,6 +5,9 @@
            , BangPatterns
    #-}
 
+{- Sets of Word64s
+This is based on the hard work of Donnacha Oisin Kidney and others.
+-}
 
 module Data.Set.Word64 (
 Word64Set, Set (..), empty, singleton, fromList,

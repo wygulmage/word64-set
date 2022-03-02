@@ -15,7 +15,7 @@ insert, delete,
 union, intersection, difference, nonintersection,
 filter, splitMember,
 member, null, foldl, foldl', foldr, foldr', foldMap, lookupMax, lookupMin, size,
-suffixOf, suffixBitMask,
+suffixOf, suffixBitMask, prefixOf,
 ) where
 
 import Control.DeepSeq
