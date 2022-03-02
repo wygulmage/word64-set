@@ -14,7 +14,7 @@ PrefixWithIndex, Tree (..), empty, singleton, fromList,
 insert, delete,
 union, intersection, difference, nonintersection,
 filter, splitMember,
-member, null, foldl, foldl', foldr, foldr', foldMap, lookupMax, lookupMin, size,
+member, null, foldl, foldl', foldr, foldr', foldMap, size,
 suffixOf, suffixBitMask, prefixOf,
 ) where
 
@@ -453,15 +453,11 @@ foldMapBits :: forall a. (Monoid a)=> (Word64 -> a) -> Prefix -> BitMap -> a
 foldMapBits f = foldrBits ((<>) . f) mempty
 {-# INLINE foldMapBits #-}
 
-lookupMax, lookupMin :: Tree -> Maybe Word64
-lookupMax = foldl (\ _ x -> Just x) Nothing
-lookupMin = foldr (\ x _ -> Just x) Nothing
-{-# INLINE lookupMax #-}
-{-# INLINE lookupMin #-}
 
 size :: Tree -> Word64
 size = foldl'Leaves (\ z _ m -> z + fromIntegral (popCount m)) 0
 {-# INLINE size #-}
+
 
 splitMember :: Word64 -> Tree -> (Tree, Bool, Tree)
 splitMember w sw = case sw of

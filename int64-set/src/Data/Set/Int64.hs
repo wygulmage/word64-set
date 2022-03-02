@@ -129,6 +129,8 @@ hasSignSplit :: Internal.PrefixWithIndex -> Bool
 hasSignSplit pm = pm == Internal.suffixBitMask -- 63
 {-# INLINE hasSignSplit #-}
 
+-- Fold order is small (left) to large (right). But the prefix is an unsigned value, so the order of the root branches be fixed when a set contains both non-negative and negative values.
+
 foldMap :: (Monoid b)=> (i64 -> b) -> Set i64 -> b
 foldMap f (Set sx) = case sx of
    Internal.Branch pm nat neg | hasSignSplit pm
@@ -137,10 +139,13 @@ foldMap f (Set sx) = case sx of
       -> Ext.inline Internal.foldMap f' sx
    where f' = f . word64ToInt64
 {-# INLINABLE foldMap #-}
+-- `foldMap` is marked `INLINABLE` because we want it to specialize to the `Monoid' it uses.
+
+-- Should I mark the directional folds NOTINLINE?
 
 foldr :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | pm == 63
+   Internal.Branch pm nat neg | hasSignSplit pm
       -> Internal.foldr f' (Internal.foldr f' z nat) neg
    _
       -> Internal.foldr f' z sx
@@ -148,7 +153,7 @@ foldr f z (Set sx) = case sx of
 
 foldr' :: (i64 -> b -> b) -> b -> Set i64 -> b
 foldr' f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | pm == 63
+   Internal.Branch pm nat neg | hasSignSplit pm
       -> Internal.foldr' f' (Internal.foldr' f' z nat) neg
    _
       -> Internal.foldr' f' z sx
@@ -156,7 +161,7 @@ foldr' f z (Set sx) = case sx of
 
 foldl :: (b -> i64 -> b) -> b -> Set i64 -> b
 foldl f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | pm == 63
+   Internal.Branch pm nat neg | hasSignSplit pm
       -> Internal.foldl f' (Internal.foldl f' z neg) nat
    _
       -> Internal.foldl f' z sx
@@ -164,7 +169,7 @@ foldl f z (Set sx) = case sx of
 
 foldl' :: (a -> i64 -> a) -> a -> Set i64 -> a
 foldl' f z (Set sx) = case sx of
-   Internal.Branch pm nat neg | pm == 63
+   Internal.Branch pm nat neg | hasSignSplit pm
       -> Internal.foldl' f' (Internal.foldl' f' z neg) nat
    _
       -> Internal.foldl' f' z sx
