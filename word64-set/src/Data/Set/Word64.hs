@@ -57,9 +57,11 @@ instance Semigroup (Set w64) where
    (<>) = union
    {-# INLINE (<>) #-}
    stimes = stimesIdempotent
+
 instance (w64 ~ Word64)=> Monoid (Set w64) where
    mempty = empty
    {-# INLINE mempty #-}
+   mconcat = foldl' (<>) mempty
 
 instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
    type Item (Set i64) = i64
@@ -69,8 +71,11 @@ instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
 
 instance Foldable Set where
    null (Set sw) = Internal.null sw
+   {-# INLINE null #-}
    length (Set sw) = fromIntegral (Internal.size sw)
+   {-# INLINE length #-}
    foldMap f (Set sw) = Internal.foldMap f sw
+   {-# INLINABLE foldMap #-}
    foldr f z (Set sw) = Internal.foldr f z sw
    foldr' f z (Set sw) = Internal.foldr' f z sw
    foldl f z (Set sw) = Internal.foldl f z sw
@@ -78,8 +83,11 @@ instance Foldable Set where
    toList = toAscList
    {-# INLINE toList #-}
    elem w (Set sw) = Internal.member w sw
+   {-# INLINE elem #-}
    maximum = foldl (\ _ x -> x) (error "maximum: empty Set")
+   {-# NOTINLINE maximum #-}
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
+   {-# NOTINLINE minimum #-}
 
 empty :: Set Word64
 empty = Set Internal.empty

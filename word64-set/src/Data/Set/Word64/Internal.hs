@@ -59,17 +59,6 @@ instance Eq Tree where
    _ == _ =
       False
 
-instance Semigroup Tree where
-   (<>) = union
-   {-# INLINE (<>) #-}
-   stimes = stimesIdempotentMonoid
-
-instance Monoid Tree where
-   mempty = empty
-   {-# INLINE mempty #-}
-   mconcat = List.foldl' union empty
-   {-# INLINE mconcat #-}
-
 null :: Tree -> Bool
 null Seed = True
 null _ = False
