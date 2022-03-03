@@ -10,7 +10,7 @@ module Data.Set.Int64 (
 Int64Set, Set(..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, disjointUnion, difference,
-splitMember,
+splitMember, maxView, minView,
 toAscList, toDesList,
 ) where
 
@@ -63,11 +63,14 @@ instance (i64 ~ Int64)=> Monoid (Set i64) where
    mempty = empty
    {-# INLINE mempty #-}
    mconcat = Foldable.foldl' union empty
+   {-# INLINE [~0] mconcat #-}
 
 instance (i64 ~ Int64)=> Ext.IsList (Set i64) where
    type Item (Set i64) = i64
    fromList = fromList
+   {-# INLINE fromList #-}
    toList = toAscList
+   {-# INLINE toList #-}
 
 instance Foldable Set where
    null (Set sw) = Internal.null sw
@@ -224,14 +227,14 @@ negativeBranch pm =
 
 splitMember :: i64 -> Set i64 -> (Set i64, Bool, Set i64)
 splitMember i (Set sw) = case sw of
-   Internal.Branch pm nat neg | pm == 63 -- root branch; nat is non-negative and neg is negative.
+   Internal.Branch pm nat neg | hasSignSplit pm -- root branch; nat is non-negative and neg is negative.
       -> if i >= 0
          -- Search for i in the non-negative branch and put the negative values in the 'less than' set.
          then case Internal.splitMember (int64ToWord64 i) nat of
-            (lt, found, gt) -> (Set (Internal.union neg lt), found, Set gt)
+            (lt, found, gt) -> (Set (Internal.branch pm lt neg), found, Set gt)
          -- Search for i in the negative values and split the negative values between the 'less than' set and the 'greater than' set.
          else case Internal.splitMember (int64ToWord64 i) neg of
-            (lt, found, gt) -> (Set lt, found, Set (Internal.union gt nat))
+            (lt, found, gt) -> (Set lt, found, Set (Internal.union nat gt))
    Internal.Branch pm _ _
          | word64ToInt64 pm < 0  &&  i >= 0
          -> (Set sw, False, mempty)
@@ -246,6 +249,29 @@ splitMember i (Set sw) = case sw of
       -> case Internal.splitMember (int64ToWord64 i) sw of
             (l, found, r) -> (Set l, found, Set r)
 {-# NOTINLINE splitMember #-}
+
+
+maxView :: Set i64 -> Maybe (i64, Set i64)
+maxView (Set sx) = case sx of
+   Internal.Branch pm nat neg | hasSignSplit pm
+      -> case Internal.deleteFindMax nat of
+           (x, nat') -> Just (word64ToInt64 x, Set (Internal.branch pm nat' neg))
+   _
+      -> case Internal.maxView sx of
+           Just (x, sx') -> Just (word64ToInt64 x, Set sx')
+           Nothing -> Nothing
+{-# NOTINLINE maxView #-}
+
+minView :: Set i64 -> Maybe (i64, Set i64)
+minView (Set sx) = case sx of
+   Internal.Branch pm nat neg | hasSignSplit pm
+      -> case Internal.deleteFindMin neg of
+           (x, neg') -> Just (word64ToInt64 x, Set (Internal.branch pm nat neg'))
+   _
+      -> case Internal.minView sx of
+           Just (x, sx') -> Just (word64ToInt64 x, Set sx')
+           Nothing -> Nothing
+{-# NOTINLINE minView #-}
 
 observe :: Set a -> Set Int64
 observe si@(Set _) = si

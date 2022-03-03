@@ -13,8 +13,9 @@ module Data.Set.Word64.Internal (
 PrefixWithIndex, Tree (..), empty, singleton, fromList,
 insert, delete,
 union, intersection, difference, disjointUnion,
-filter, splitMember,
+filter, splitMember, maxView, minView, deleteFindMax, deleteFindMin,
 member, null, foldl, foldl', foldr, foldr', foldMap, size,
+branch,
 suffixOf, suffixBitMask, prefixOf,
 ) where
 
@@ -499,6 +500,46 @@ splitMember w sw = case sw of
    Seed
       -> (Seed, False, Seed)
 {-# INLINE splitMember #-}
+
+
+minView :: Tree -> Maybe (Word64, Tree)
+minView sx
+   | null sx = Nothing
+   | otherwise = Just $! deleteFindMin sx
+{-# INLINE minView #-}
+
+deleteFindMin :: Tree -> (Word64, Tree)
+deleteFindMin sx = case sx of
+   Seed -> error "deleteFindMin: empty set"
+   Leaf pre bmp
+      | i <- lowestBitIndex bmp
+      , x <- pre + i
+      , sx' <- leaf pre (bmp .&. complement (bitmapOf i))
+      -> (x, sx')
+   Branch pm l r
+      | (x, l') <- deleteFindMin l
+      -> let !sx' = branch pm l' r in (x, sx')
+{-# INLINE deleteFindMin #-}
+
+maxView :: Tree -> Maybe (Word64, Tree)
+maxView sx
+   | null sx = Nothing
+   | otherwise = Just $! deleteFindMax sx
+{-# INLINE maxView #-}
+
+deleteFindMax :: Tree -> (Word64, Tree)
+deleteFindMax sx = case sx of
+   Seed -> error "deleteFindMax: empty set"
+   Leaf pre bmp
+      | i <- highestBitIndex bmp
+      , x <- pre + i
+      , sx' <- leaf pre (bmp .&. complement (bitmapOf i))
+      -> (x, sx')
+   Branch pm l r
+      | (x, r') <- deleteFindMax r
+      , sx' <- branch pm l r'
+      -> (x, sx')
+{-# INLINE deleteFindMax #-}
 
 ------ Internal ------
 

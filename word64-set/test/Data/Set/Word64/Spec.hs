@@ -50,6 +50,14 @@ spec = do
       "not member" `it` property prop_splitMember_not_member
       "ordered" `it` property prop_splitMember_ordered
 
+   describe "maxView" $ do
+      "returns maximum" `it` property prop_maxView_maximum
+      "deletes maximum" `it` property prop_maxView_delete
+
+   describe "minView" $ do
+      "returns minimum" `it` property prop_minView_minimum
+      "deletes minimum" `it` property prop_minView_delete
+
    describe "to/from list" $ do
       "identity" `it` property prop_to_from_list_identity
 
@@ -147,6 +155,11 @@ prop_splitMember_not_member x sx =
 prop_splitMember_ordered x sx =
    case splitMember x sx of (sl, _, sg) -> all (x >) sl && all (x <) sg
 
+prop_maxView_maximum sx = maybe True ((maximum sx ==) . fst) (maxView sx)
+prop_maxView_delete sx = maybe True (\ (x, sx') -> sx' == delete x sx) (maxView sx)
+
+prop_minView_minimum sx = maybe True ((minimum sx ==) . fst) (minView sx)
+prop_minView_delete sx = maybe True (\ (x, sx') -> sx' == delete x sx) (minView sx)
 
 prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 

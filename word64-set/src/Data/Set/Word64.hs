@@ -13,7 +13,7 @@ module Data.Set.Word64 (
 Word64Set, Set (..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, disjointUnion, difference,
-splitMember,
+splitMember, maxView, minView,
 toAscList, toDesList,
 ) where
 
@@ -62,10 +62,12 @@ instance (w64 ~ Word64)=> Monoid (Set w64) where
    mempty = empty
    {-# INLINE mempty #-}
    mconcat = foldl' (<>) mempty
+   {-# INLINE [~0] mconcat #-}
 
 instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
    type Item (Set i64) = i64
    fromList = fromList
+   {-# INLINE fromList #-}
    toList = toAscList
    {-# INLINE toList #-}
 
@@ -169,6 +171,18 @@ splitMember :: w64 -> Set w64 -> (Set w64, Bool, Set w64)
 splitMember w (Set sw) =
    case Internal.splitMember w sw of (l, mmbr, r) -> (Set l, mmbr, Set r)
 {-# NOTINLINE splitMember #-}
+
+minView :: Set w64 -> Maybe (w64, Set w64)
+minView (Set sw) = case Internal.minView sw of
+   Just (w, sw') -> Just (w, Set sw')
+   Nothing -> Nothing
+{-# NOTINLINE minView #-}
+
+maxView :: Set w64 -> Maybe (w64, Set w64)
+maxView (Set sw) = case Internal.maxView sw of
+   Just (w, sw') -> Just (w, Set sw')
+   Nothing -> Nothing
+{-# NOTINLINE maxView #-}
 
 observe :: Set w64 -> Set Word64
 observe si@(Set _) = si
