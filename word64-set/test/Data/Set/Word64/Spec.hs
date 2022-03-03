@@ -76,6 +76,12 @@ spec = do
    describe "null" $ do
       "is empty" `it` property prop_null
 
+   describe "foldl'" $ do
+      "is strict foldl" `it` property prop_foldl'_is_strict_foldl
+
+   describe "foldr'" $ do
+      "is strict foldr" `it` property prop_foldr'_is_strict_foldr
+
    describe "read, show" $ do
       "read . show === id" `it` property prop_show_read
 
@@ -165,6 +171,12 @@ prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
 prop_toAscList_sorted sx = toAscList sx == sort (toAscList sx)
 prop_toDesList_sorted sx = toDesList sx == sortOn Down (toAscList sx)
+
+prop_foldl'_is_strict_foldl sx =
+   foldl' (flip (:)) [] sx == toDesList sx
+
+prop_foldr'_is_strict_foldr sx =
+   foldr' (:) [] sx == toAscList sx
 
 prop_minimum_default :: Word64Set -> Bool
 prop_minimum_default sx =
