@@ -161,11 +161,11 @@ prop_splitMember_not_member x sx =
 prop_splitMember_ordered x sx =
    case splitMember x sx of (sl, _, sg) -> all (x >) sl && all (x <) sg
 
-prop_maxView_maximum sx = maybe True ((maximum sx ==) . fst) (maxView sx)
-prop_maxView_delete sx = maybe True (\ (x, sx') -> sx' == delete x sx) (maxView sx)
+prop_maxView_maximum sx = all ((maximum sx ==) . fst) (maxView sx)
+prop_maxView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (maxView sx)
 
-prop_minView_minimum sx = maybe True ((minimum sx ==) . fst) (minView sx)
-prop_minView_delete sx = maybe True (\ (x, sx') -> sx' == delete x sx) (minView sx)
+prop_minView_minimum sx = all ((minimum sx ==) . fst) (minView sx)
+prop_minView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (minView sx)
 
 prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
