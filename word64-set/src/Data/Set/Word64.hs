@@ -35,30 +35,37 @@ instance NFData1 Set where liftRnf _ = rwhnf
 instance Show (Set w64) where
    show sw =
      "fromList " <> show (toAscList (observe sw))
+   {-# NOTINLINE show #-}
 
 instance (w64 ~ Word64)=> Read (Set w64) where
    readPrec = parens $ prec 10 $ do
       Ident "fromList" <- lexP
       fmap fromList readPrec
+   {-# NOTINLINE readPrec #-}
 
    readListPrec = readListPrecDefault
+   {-# NOTINLINE readListPrec #-}
 
 instance Eq (Set w64) where
    Set sx == Set sy = sx == sy
+   {-# INLINE (==) #-}
 
 instance Ord (Set w64) where
    compare sx sy = compare (toAscList (observe sx)) (toAscList (observe sy))
 
 instance Semigroup (Set w64) where
    (<>) = union
+   {-# INLINE (<>) #-}
    stimes = stimesIdempotent
 instance (w64 ~ Word64)=> Monoid (Set w64) where
    mempty = empty
+   {-# INLINE mempty #-}
 
 instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
    type Item (Set i64) = i64
    fromList = fromList
    toList = toAscList
+   {-# INLINE toList #-}
 
 instance Foldable Set where
    null (Set sw) = Internal.null sw
@@ -69,6 +76,7 @@ instance Foldable Set where
    foldl f z (Set sw) = Internal.foldl f z sw
    foldl' f z (Set sw) = Internal.foldl' f z sw
    toList = toAscList
+   {-# INLINE toList #-}
    elem w (Set sw) = Internal.member w sw
    maximum = foldl (\ _ x -> x) (error "maximum: empty Set")
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
@@ -87,9 +95,11 @@ fromList = toSet
 
 insert :: w64 -> Set w64 -> Set w64
 insert w (Set sw) = Set (Internal.insert w sw)
+{-# INLINE insert #-}
 
 delete :: w64 -> Set w64 -> Set w64
 delete w (Set sw) = Set (Internal.delete w sw)
+{-# INLINE delete #-}
 
 toAscList :: Set w64 -> [w64]
 toAscList xs = Ext.build (\ c n -> foldr c n xs)
@@ -131,26 +141,33 @@ alterFWith !mapper f = go -- Hopefully this makes specialization (e.g. in 'alter
 
 union :: Set w64 -> Set w64 -> Set w64
 union = liftSet2 Internal.union
+{-# INLINE union #-}
 
 intersection :: Set w64 -> Set w64 -> Set w64
 intersection = liftSet2 Internal.intersection
+{-# INLINE intersection #-}
 
 disjointUnion :: Set w64 -> Set w64 -> Set w64
 disjointUnion = liftSet2 Internal.disjointUnion
+{-# INLINE disjointUnion #-}
 
 difference :: Set w64 -> Set w64 -> Set w64
 difference = liftSet2 Internal.difference
+{-# INLINE difference #-}
 
 splitMember :: w64 -> Set w64 -> (Set w64, Bool, Set w64)
 {-^ Split a 'Set' into the 'Set' of elements that are less than and the 'Set' of elements that are greater than a 'Word64', and indicate whether the provided 'Word64 was present in the 'Set'.
 -}
 splitMember w (Set sw) =
    case Internal.splitMember w sw of (l, mmbr, r) -> (Set l, mmbr, Set r)
+{-# NOTINLINE splitMember #-}
 
 observe :: Set w64 -> Set Word64
 observe si@(Set _) = si
+{-# INLINE observe #-}
 
 liftSet2 ::
    (Internal.Tree -> Internal.Tree -> Internal.Tree) ->
    Set w64 -> Set w64 -> Set w64
-liftSet2 f (Set sx) (Set sy) = Set (f sx sy)
+liftSet2 f = \ (Set sx) (Set sy) -> Set (f sx sy)
+{-# INLINE liftSet2 #-}

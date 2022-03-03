@@ -20,6 +20,7 @@ suffixOf, suffixBitMask, prefixOf,
 
 import Control.DeepSeq
 import Data.Bits
+import Data.Semigroup
 import Data.Monoid
 import Data.Word (Word64)
 import Data.Functor.Const
@@ -35,6 +36,7 @@ type BitMask = Word64
 type PrefixWithIndex = Word64
 prefixWithIndex :: Prefix -> BitMask -> PrefixWithIndex
 prefixWithIndex p m = p .|. lowestBitIndex m
+{-# INLINE prefixWithIndex #-}
 
 data Tree
    = Branch {-# UNPACK #-} !PrefixWithIndex !Tree !Tree
@@ -57,19 +59,33 @@ instance Eq Tree where
    _ == _ =
       False
 
+instance Semigroup Tree where
+   (<>) = union
+   {-# INLINE (<>) #-}
+   stimes = stimesIdempotentMonoid
+
+instance Monoid Tree where
+   mempty = empty
+   {-# INLINE mempty #-}
+   mconcat = List.foldl' union empty
+   {-# INLINE mconcat #-}
 
 null :: Tree -> Bool
 null Seed = True
 null _ = False
+{-# INLINE null #-}
 
 empty :: Tree
 empty = Seed
+{-# INLINE empty #-}
 
 singleton :: Word64 -> Tree
 singleton x = Leaf (prefixOf x) (bitmapOf x)
+{-# INLINE singleton #-}
 
 fromList :: [Word64] -> Tree
 fromList = List.foldl' (flip insert) empty
+{-# INLINE [~0] fromList #-}
 
 
 ------ Do Things with Specific Word64s.
@@ -89,9 +105,8 @@ member x (Branch pm l r)
 insert :: Word64 -> Tree -> Tree
 {-^ Insert a 'Word64' into a set.
 -}
--- insert !x sx = insertBM (prefixOf x) (bitmapOf x) sx
--- Need to duplicate the code from 'insertBM' to keep this 'polymorphic'
 insert !x = insertBM (prefixOf x) (bitmapOf x)
+{-# NOTINLINE insert #-}
 
 insertBM :: Prefix -> BitMap -> Tree -> Tree
 insertBM !p' !m' sx = case sx of
@@ -112,10 +127,12 @@ insertBM !p' !m' sx = case sx of
        -> link p' (Leaf p' m') p sx
     Seed
        -> Leaf p' m'
+{-# INLINE insertBM #-}
 
 delete :: Word64 -> Tree -> Tree
 {-^ Delete a 'Word64' from a Set. -}
 delete x = deleteBM (prefixOf x) (bitmapOf x)
+{-# NOTINLINE delete #-}
 
 deleteBM :: Prefix -> BitMap -> Tree -> Tree
 deleteBM p' m' sx = case sx of
@@ -136,6 +153,7 @@ deleteBM p' m' sx = case sx of
       -> sx
    Seed
       -> Seed
+{-# INLINE deleteBM #-}
 
 
 ------ Combine Sets ------
@@ -165,6 +183,7 @@ union sx@Branch{} (Leaf p m) = insertBM p m sx
 union sx@Branch{} Seed = sx
 union (Leaf p m) sy = insertBM p m sy
 union Seed sy = sy
+{-# NOTINLINE union #-}
 
 
 difference :: Tree -> Tree -> Tree
@@ -205,7 +224,7 @@ difference sx sy = case sy of
                | nomatch px py my = sx
                | zero px my       = difference sx ly
                | otherwise        = difference sx ry
-
+{-# NOTINLINE difference #-}
 
 disjointUnion :: Tree -> Tree -> Tree
 {-^ @disjointUnion@ gives the symmetric difference of 'Tree's. -}
@@ -243,6 +262,7 @@ disjointUnion sx@Branch{} (Leaf p m) = disjointUnionBM p m sx
 disjointUnion sx@Branch{} Seed = sx
 disjointUnion (Leaf p m) sy = disjointUnionBM p m sy
 disjointUnion Seed sy = sy
+{-# NOTINLINE disjointUnion #-}
 
 disjointUnionBM :: Prefix -> BitMap -> Tree -> Tree
 disjointUnionBM p' m' sx = case sx of
@@ -263,7 +283,7 @@ disjointUnionBM p' m' sx = case sx of
       -> link p' (Leaf p' m') p sx
     Seed
        -> Leaf p' m'
-
+{-# INLINE disjointUnionBM #-}
 
 intersection :: Tree -> Tree -> Tree
 intersection sx@(Branch pmx lx rx) sy@(Branch pmy ly ry)
@@ -296,6 +316,7 @@ intersection sx@Branch{} (Leaf py my) = intersectionBM py my sx
 intersection Branch{} Seed = Seed
 intersection (Leaf p m) sy = intersectionBM p m sy
 intersection Seed _ = Seed
+{-# NOTINLINE intersection #-}
 
 
 intersectionBM :: Prefix -> BitMap -> Tree -> Tree
@@ -314,10 +335,12 @@ intersectionBM p m sw = case sw of
       -> Seed
    Seed
       -> Seed
+{-# INLINE intersectionBM #-}
 
 shorter :: BitMask -> BitMask -> Bool
 {-^ The higher the mask bit, the shorter the prefix. -}
-shorter mx my = mx > my
+shorter = (>)
+{-# INLINE shorter #-}
 
 -- instance Bits (Set Word64) where
 --    (.&.) = intersection
@@ -456,7 +479,7 @@ foldMapBits f = foldrBits ((<>) . f) mempty
 
 size :: Tree -> Word64
 size = foldl'Leaves (\ z _ m -> z + fromIntegral (popCount m)) 0
-{-# INLINE size #-}
+{-# NOTINLINE size #-}
 
 
 splitMember :: Word64 -> Tree -> (Tree, Bool, Tree)
@@ -501,19 +524,24 @@ prefixOf :: Word64 -> Prefix
 prefixOf = (.&.) prefixBitMask
    where
       prefixBitMask = complement suffixBitMask
+{-# INLINE prefixOf #-}
 suffixOf :: Word64 -> Word64
 suffixOf = (.&.) suffixBitMask
+{-# INLINE suffixOf #-}
 
 suffixBitMask :: BitMask
 suffixBitMask = intToWord64 (word64Size - 1) -- hopefully 63
+{-# INLINE suffixBitMask #-}
 
 nomatch :: Word64 -> Prefix -> BitIndex -> Bool
 {-^ Does the prefix of the 'Word64' not match the given prefix up to the index? -}
 nomatch x p m = p /= mask x m
+{-# INLINE nomatch #-}
 
 mask :: Word64 -> Word64 -> Word64
 {-^ @mask x m@ unsets all the bits in @x@ below the lowest bit in @m@. -}
 mask x m = x .&. (m .+. negate m) -- m .+. negate m sets all the bits in m above the lowest set bit, and unsets the lowest set bit and all the bits below.
+{-# INLINE mask #-}
 
 branch :: Word64 -> Tree -> Tree -> Tree
 {-^ Combine two ordered disjoint sets, removing empty ones. -}
@@ -546,26 +574,32 @@ link px sx py sy = linkWithMask (branchMask px py) px sx sy
 lowestBit :: Word64 -> Word64
 {-^ @lowestBit x@ is the smallest set bit in @x@. -}
 lowestBit x = x .&. negate x
+{-# INLINE lowestBit #-}
 
 lowestBitIndex :: Word64 -> Word64
 {-^ @lowestBitIndex x@ is the index of the smallest set bit in @x@. -}
 lowestBitIndex = intToWord64 . countTrailingZeros
+{-# INLINE lowestBitIndex #-}
 
 highestBit :: Word64 -> Word64
 highestBit = uncheckedBit . highestBitIndexInt
    where uncheckedBit = unsafeShiftL 1
+{-# INLINE highestBit #-}
 
 highestBitIndex :: Word64 -> Word64
 {-^ @highestBitIndex@ is the index of the largest set bit in @x@. -}
 highestBitIndex = intToWord64 . highestBitIndexInt
+{-# INLINE highestBitIndex #-}
 
 highestBitIndexInt :: Word64 -> Int
 {-^ @highestBitIndex@ is the index of the largest set bit in @x@. -}
 highestBitIndexInt x = (word64Size - 1) - countLeadingZeros x
+{-# INLINE highestBitIndexInt #-}
 
 disjointBits :: Word64 -> Word64 -> Bool
 {-^ Are the parameters disjoint? -}
 disjointBits x y = x .&. y  ==  0
+{-# INLINE disjointBits #-}
 
 zero :: Word64 -> Word64 -> Bool
 {-^ Are the parameters disjoint? -}
@@ -574,14 +608,65 @@ zero = disjointBits
 (.+.) :: (Bits a)=> a -> a -> a
 (.+.) = xor
 infixl 6 .+.
+{-# INLINE (.+.) #-}
 
 ------ Conversion ------
 
 intToWord64 :: Int -> Word64
 intToWord64 = fromIntegral -- `toEnum` throws an error on a negative Int.
+{-# INLINE intToWord64 #-}
 
 word64ToInt :: Word64 -> Int
 word64ToInt = fromIntegral -- `fromEnum` throws an error on a large Word64.
+{-# INLINE word64ToInt #-}
 
 word64Size :: Int
 word64Size = finiteBitSize (undefined :: Word64) -- hopefully 64.
+{-# INLINE word64Size #-}
+
+
+------ RULES ------
+{-# RULES
+"union left identity"
+   union Seed = id
+"union right identity"
+   forall sx. union sx Seed = sx
+"union idempotent"
+   forall sx. union sx sx = sx
+"union left insert"
+   forall pre bmp. union (Leaf pre bmp) = insertBM pre bmp
+"union right insert"
+   forall sx pre bmp. union sx (Leaf pre bmp) = insertBM pre bmp sx
+
+"intersection left anihilation"
+   forall sx. intersection Seed sx = Seed
+"intersection right anihilation"
+   forall sx. intersection sx Seed = Seed
+"intersection idempotent"
+   forall sx. intersection sx sx = sx
+"intersection left Leaf"
+   forall pre bmp. intersection (Leaf pre bmp) = intersectionBM pre bmp
+"intersection right Leaf"
+   forall sx pre bmp. intersection sx (Leaf pre bmp) = intersectionBM pre bmp sx
+
+"disjointUnion left identity"
+   disjointUnion Seed = id
+"disjointUnion right identity"
+   forall sx. disjointUnion sx Seed = sx
+"disjointUnion self anihilation"
+   forall sx. disjointUnion sx sx = Seed
+"disjointUnion left Leaf"
+   forall pre bmp. disjointUnion (Leaf pre bmp) = disjointUnionBM pre bmp
+"disjointUnion right Leaf"
+   forall sx pre bmp. disjointUnion sx (Leaf pre bmp) = disjointUnionBM pre bmp sx
+
+"difference right identity"
+    forall sx. difference sx Seed = sx
+"difference left anihilation"
+   forall sx. difference Seed sx = Seed
+"difference self anihilation"
+   forall sx. difference sx sx = sx
+"difference right Leaf"
+   forall sx pre bmp. difference sx (Leaf pre bmp) = deleteBM pre bmp sx
+
+   #-}

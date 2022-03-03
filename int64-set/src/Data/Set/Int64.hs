@@ -35,16 +35,20 @@ instance NFData1 Set where liftRnf _ = rwhnf
 instance Show (Set i64) where
    show si =
      "fromList " <> show (toAscList (observe si))
+   {-# NOTINLINE show #-}
 
 instance (i64 ~ Int64)=> Read (Set i64) where
    readPrec = parens $ prec 10 $ do
       Ident "fromList" <- lexP
       fmap fromList readPrec
+   {-# NOTINLINE readPrec #-}
 
    readListPrec = readListPrecDefault
+   {-# NOTINLINE readListPrec #-}
 
 instance Eq (Set i64) where
    Set sx == Set sy = sx == sy
+   {-# INLINE (==) #-}
 
 instance Ord (Set i64) where
 {-^ total lexicographic ordering (rather than partial subset ordering) -}
@@ -88,9 +92,11 @@ fromList = toSet
 
 insert :: a -> Set a -> Set a
 insert !i (Set sx) = Set (Internal.insert (int64ToWord64 i) sx)
+{-# INLINE insert #-}
 
 delete :: a -> Set a -> Set a
 delete !i (Set sx) = Set (Internal.delete (int64ToWord64 i) sx)
+{-# INLINE delete #-}
 
 alterF :: (Functor m)=> (Bool -> m Bool) -> i64 -> Set i64 -> m (Set i64)
 {-^ @alterF@ is the general-purpose function for operating on a single element of a 'Set'.
@@ -184,15 +190,19 @@ toDesList xs = Ext.build (\ c n -> foldl (flip c) n xs)
 
 union :: Set i64 -> Set i64 -> Set i64
 union = liftSet2 Internal.union
+{-# INLINE union #-}
 
 intersection :: Set i64 -> Set i64 -> Set i64
 intersection = liftSet2 Internal.intersection
+{-# INLINE intersection #-}
 
 difference :: Set i64 -> Set i64 -> Set i64
 difference = liftSet2 Internal.difference
+{-# INLINE difference #-}
 
 disjointUnion :: Set i64 -> Set i64 -> Set i64
 disjointUnion = liftSet2 Internal.disjointUnion
+{-# INLINE disjointUnion #-}
 
 negativeBranch :: Internal.PrefixWithIndex -> Bool
 negativeBranch pm =
@@ -224,14 +234,17 @@ splitMember i (Set sw) = case sw of
    _
       -> case Internal.splitMember (int64ToWord64 i) sw of
             (l, found, r) -> (Set l, found, Set r)
+{-# NOTINLINE splitMember #-}
 
 observe :: Set a -> Set Int64
 observe si@(Set _) = si
+{-# INLINE observe #-}
 
 liftSet2 ::
    (Internal.Tree -> Internal.Tree -> Internal.Tree) ->
    Set i64 -> Set i64 -> Set i64
-liftSet2 f (Set sx) (Set sy) = Set (f sx sy)
+liftSet2 f = \ (Set sx) (Set sy) -> Set (f sx sy)
+{-# INLINE liftSet2 #-}
 
 {- According to 'Data.Word', "For coercing between any two integer types, use fromIntegral, which is specialized for all the common cases so should be fast enough. Coercing word types to and from integer types preserves representation, not sign.".
 -}
@@ -239,7 +252,9 @@ liftSet2 f (Set sx) (Set sy) = Set (f sx sy)
 int64ToWord64 :: Int64 -> Word64
 {-^ Coerce one 'Int64' to one 'Word64', preserving representation. -}
 int64ToWord64 = fromIntegral
+{-# INLINE int64ToWord64 #-}
 
 word64ToInt64 :: Word64 -> Int64
 {-^ Coerce one 'Word64' to one 'Int64', preserving representation. -}
 word64ToInt64 = fromIntegral
+{-# INLINE word64ToInt64 #-}
