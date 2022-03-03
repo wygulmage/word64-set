@@ -12,7 +12,7 @@ This is based on the hard word of Daan Leijen, Joachim Breitner, Chris Okasaki, 
 module Data.Set.Word64.Internal (
 PrefixWithIndex, Tree (..), empty, singleton, fromList,
 insert, delete,
-union, intersection, difference, nonintersection,
+union, intersection, difference, disjointUnion,
 filter, splitMember,
 member, null, foldl, foldl', foldr, foldr', foldMap, size,
 suffixOf, suffixBitMask, prefixOf,
@@ -207,15 +207,15 @@ difference sx sy = case sy of
                | otherwise        = difference sx ry
 
 
-nonintersection :: Tree -> Tree -> Tree
-{-^ @nonintersection@ gives the symmetric difference of 'Tree's. -}
-nonintersection sx@(Branch pmx lx rx) sy@(Branch pmy ly ry)
+disjointUnion :: Tree -> Tree -> Tree
+{-^ @disjointUnion@ gives the symmetric difference of 'Tree's. -}
+disjointUnion sx@(Branch pmx lx rx) sy@(Branch pmy ly ry)
    | shorter ix iy
-   = nonintersectionx
+   = disjointUnionx
    | shorter iy ix
-   = nonintersectiony
+   = disjointUniony
    | px == py
-   = branch pmx (nonintersection lx ly) (nonintersection rx ry)
+   = branch pmx (disjointUnion lx ly) (disjointUnion rx ry)
    | otherwise
    = link px sx py sy
    where
@@ -225,34 +225,34 @@ nonintersection sx@(Branch pmx lx rx) sy@(Branch pmy ly ry)
       my = bitmapOf pmy
       px = prefixOf pmx
       py = prefixOf pmy
-      nonintersectionx
+      disjointUnionx
          | nomatch py px mx
          = link px sx py sy
          | zero py mx
-         = branch pmx (nonintersection lx sy) rx
+         = branch pmx (disjointUnion lx sy) rx
          | otherwise
-         = branch pmx lx (nonintersection rx sy)
-      nonintersectiony
+         = branch pmx lx (disjointUnion rx sy)
+      disjointUniony
          | nomatch px py my
          = link px sx py sy
          | zero px my
-         = branch pmy (nonintersection sx ly) ry
+         = branch pmy (disjointUnion sx ly) ry
          | otherwise
-         = branch pmy ly (nonintersection sx ry)
-nonintersection sx@Branch{} (Leaf p m) = nonintersectionBM p m sx
-nonintersection sx@Branch{} Seed = sx
-nonintersection (Leaf p m) sy = nonintersectionBM p m sy
-nonintersection Seed sy = sy
+         = branch pmy ly (disjointUnion sx ry)
+disjointUnion sx@Branch{} (Leaf p m) = disjointUnionBM p m sx
+disjointUnion sx@Branch{} Seed = sx
+disjointUnion (Leaf p m) sy = disjointUnionBM p m sy
+disjointUnion Seed sy = sy
 
-nonintersectionBM :: Prefix -> BitMap -> Tree -> Tree
-nonintersectionBM p' m' sx = case sx of
+disjointUnionBM :: Prefix -> BitMap -> Tree -> Tree
+disjointUnionBM p' m' sx = case sx of
     Branch pm l r
        | nomatch p' p m
        -> link p' (Leaf p' m') p sx
        | zero p' m
-       -> branch pm (nonintersectionBM p' m' l) r
+       -> branch pm (disjointUnionBM p' m' l) r
        | otherwise
-       -> branch pm l (nonintersectionBM p' m' r)
+       -> branch pm l (disjointUnionBM p' m' r)
        where
           !p = prefixOf pm
           !m = bitmapOf pm

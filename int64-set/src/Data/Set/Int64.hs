@@ -9,7 +9,7 @@
 module Data.Set.Int64 (
 Int64Set, Set(..), empty, singleton, fromList,
 insert, delete, alterF,
-intersection, union, difference,
+intersection, union, disjointUnion, difference,
 splitMember,
 toAscList, toDesList,
 ) where
@@ -191,8 +191,8 @@ intersection = liftSet2 Internal.intersection
 difference :: Set i64 -> Set i64 -> Set i64
 difference = liftSet2 Internal.difference
 
-nonintersection :: Set i64 -> Set i64 -> Set i64
-nonintersection = liftSet2 Internal.nonintersection
+disjointUnion :: Set i64 -> Set i64 -> Set i64
+disjointUnion = liftSet2 Internal.disjointUnion
 
 negativeBranch :: Internal.PrefixWithIndex -> Bool
 negativeBranch pm =

@@ -12,7 +12,7 @@ This is based on the hard work of Donnacha Oisin Kidney and others.
 module Data.Set.Word64 (
 Word64Set, Set (..), empty, singleton, fromList,
 insert, delete, alterF,
-intersection, union, difference,
+intersection, union, disjointUnion, difference,
 splitMember,
 toAscList, toDesList,
 ) where
@@ -135,8 +135,8 @@ union = liftSet2 Internal.union
 intersection :: Set w64 -> Set w64 -> Set w64
 intersection = liftSet2 Internal.intersection
 
-nonintersection :: Set w64 -> Set w64 -> Set w64
-nonintersection = liftSet2 Internal.nonintersection
+disjointUnion :: Set w64 -> Set w64 -> Set w64
+disjointUnion = liftSet2 Internal.disjointUnion
 
 difference :: Set w64 -> Set w64 -> Set w64
 difference = liftSet2 Internal.difference

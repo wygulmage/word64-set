@@ -39,6 +39,9 @@ spec = do
    describe "intersection" $ do
       "`intersection sx sy` is the set of all elements that are shared between `sx` and `sy`" `it` property prop_intersection
 
+   describe "disjointUnion" $ do
+      "disjointUnion sx sy is the set of all elements that are in either sx or sy but not both sx and sy." `it` property prop_disjointUnion
+
    describe "difference" $ do
       "is difference" `it` property prop_difference
 
@@ -85,7 +88,7 @@ prop_elem :: Int64Set -> Bool
 prop_elem = isElem elem
 prop_member_singleton w = elem w (singleton w)
 prop_insert_elem x sx = elem x (insert x sx)
-prop_delete_elem x sx = not (elem x (delete x sx))
+prop_delete_elem x sx = notElem x (delete x sx)
 prop_insert_delete x sx =
    elem x sx' && -- insert inserts.
    notElem x sx'' && -- delete deletes.
@@ -121,10 +124,12 @@ prop_intersection = isIntersection intersection
 isIntersection :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
 isIntersection f sx sy = let sz = f sx sy in
    all (\ x -> elem x sx && elem x sy) sz &&
-   all (\ x -> elem x sz /= not (elem x sy)) sx &&
-   all (\ x -> elem x sz /= not (elem x sx)) sy
+   all (\ x -> elem x sz == elem x sy) sx &&
+   all (\ x -> elem x sz == elem x sx) sy
 
-isNonintersection f sx sy =
+prop_disjointUnion :: Int64Set -> Int64Set -> Bool
+prop_disjointUnion = isDisjointUnion disjointUnion
+isDisjointUnion f sx sy =
    all (\ x -> elem x sx /= elem x sy) sz &&
    all (\ x -> elem x sz /= elem x sy) sx &&
    all (\ x -> elem x sz /= elem x sx) sy
@@ -138,7 +143,7 @@ prop_difference :: Int64Set -> Int64Set -> Bool
 prop_difference = isDifference difference
 isDifference :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
 isDifference f sx sy = let sz = f sx sy in
-   all (\ x -> elem x sx && not (elem x sy)) sz  &&
+   all (\ x -> elem x sx && notElem x sy) sz  &&
    all (\ x -> elem x sz /= elem x sy) sx
 
 
