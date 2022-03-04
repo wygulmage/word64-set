@@ -47,7 +47,6 @@ spec = do
 
    describe "splitMember" $ do
       "member" `it` property prop_splitMember_member
-      "not member" `it` property prop_splitMember_not_member
       "ordered" `it` property prop_splitMember_ordered
 
    describe "maxView" $ do
@@ -86,88 +85,23 @@ spec = do
       "read . show === id" `it` property prop_show_read
 
 
+--- Show, Read
+prop_show_read :: Word64Set -> Bool
+prop_show_read sx = read (show sx) == sx
+
+--- Eq
 prop_equal_self :: Word64Set -> Bool
-prop_equal_self sw = sw == sw
+prop_equal_self sx = sx == sx
 prop_toList_eq :: Word64Set -> Word64Set -> Bool
 prop_toList_eq sx sy = (sx == sy) == (toList sx == toList sy)
 
+--- IsList
+prop_to_from_list_identity sx = sx == fromList (toDesList sx)
+
+--- Foldable
 isElem f sx = all (`f` sx) (toList sx)
 prop_elem :: Word64Set -> Bool
 prop_elem = isElem elem
-prop_member_singleton w = elem w (singleton w)
-prop_insert_elem x sx = elem x (insert x sx)
-prop_delete_elem x sx = notElem x (delete x sx)
-prop_insert_delete x sx =
-   elem x sx' && -- insert inserts.
-   notElem x sx'' && -- delete deletes.
-   ((sx'' == sx)  /=  (sx' == sx)) -- insert only inserts and delete only deletes.
-   where
-      sx' = insert x sx
-      sx'' = delete x sx'
-
-prop_alterF_member w sw = getConst (alterF Const w sw) == elem w sw
-prop_alterF_insert w sw = runIdentity (alterF (\_-> Identity True) w sw) == insert w sw
-prop_alterF_delete w sw = runIdentity (alterF (\_-> Identity False) w sw) == delete w sw
-prop_alterF_identity w sw = runIdentity (alterF Identity w sw) == sw
-
-prop_union_commutative sx sy = union sx sy == union sy sx
-prop_union_self si = union si si == si
-prop_union_empty si = union empty si == si
-
-prop_union :: Word64Set -> Word64Set -> Bool
-prop_union = isUnion union
-isUnion :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
-isUnion f sx sy = let sz = f sx sy in
-   all (\ x -> elem x sx || elem x sy) sz &&
-   all (`elem` sz) sx &&
-   all (`elem` sz) sy
-
-
-prop_intersection_commutative sx sy = intersection sx sy == intersection sy sx
-prop_intersection_self si = intersection si si == si
-prop_intersection_empty si = intersection empty si == mempty
-
-prop_intersection :: Word64Set -> Word64Set -> Bool
-prop_intersection = isIntersection intersection
-isIntersection :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
-isIntersection f sx sy = let sz = f sx sy in
-   all (\ x -> elem x sx && elem x sy) sz &&
-   all (\ x -> elem x sz /= notElem x sy) sx &&
-   all (\ x -> elem x sz /= notElem x sx) sy
-
-prop_disjointUnion :: Word64Set -> Word64Set -> Bool
-prop_disjointUnion = isDisjointUnion disjointUnion
-isDisjointUnion f sx sy =
-   all (\ x -> elem x sx /= elem x sy) sz &&
-   all (\ x -> elem x sz /= elem x sy) sx &&
-   all (\ x -> elem x sz /= elem x sx) sy
-   where sz = f sx sy
-
-prop_difference_self sx = difference sx sx == mempty
-prop_difference_empty_1 sx = difference mempty sx == mempty
-prop_difference_empty_2 sx = difference sx mempty == sx
-
-prop_difference :: Word64Set -> Word64Set -> Bool
-prop_difference = isDifference difference
-isDifference :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
-isDifference f sx sy = let sz = f sx sy in
-   all (\ x -> elem x sx && notElem x sy) sz  &&
-   all (\ x -> elem x sz /= elem x sy) sx
-
-
-prop_splitMember_member x sx = elem x sx == case splitMember x sx of (_, b, _) -> b
-prop_splitMember_not_member x sx =
-   case splitMember x sx of (sl, _, sg) -> not (elem x sl || elem x sg)
-prop_splitMember_ordered x sx =
-   case splitMember x sx of (sl, _, sg) -> all (x >) sl && all (x <) sg
-
-prop_maxView_maximum sx = all ((maximum sx ==) . fst) (maxView sx)
-prop_maxView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (maxView sx)
-
-prop_minView_minimum sx = all ((minimum sx ==) . fst) (minView sx)
-prop_minView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (minView sx)
-
-prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
 prop_toAscList_sorted sx = toAscList sx == sort (toAscList sx)
 prop_toDesList_sorted sx = toDesList sx == sortOn Down (toAscList sx)
@@ -193,5 +127,65 @@ prop_maximum_default sx =
 prop_null :: Word64Set -> Bool
 prop_null sx = null sx == (sx == mempty)
 
-prop_show_read :: Word64Set -> Bool
-prop_show_read sx = read (show sx) == sx
+--- singleton, insert, delete
+prop_member_singleton x = elem x (singleton x)
+prop_insert_elem x sx = elem x (insert x sx)
+prop_delete_elem x sx = notElem x (delete x sx)
+prop_insert_delete x sx =
+   elem x sx' && -- insert inserts.
+   notElem x sx'' && -- delete deletes.
+   ((sx'' == sx)  /=  (sx' == sx)) -- insert only inserts and delete only deletes.
+   where
+      sx' = insert x sx
+      sx'' = delete x sx'
+
+--- alterF
+prop_alterF_member x sx = getConst (alterF Const x sx) == elem x sx
+prop_alterF_insert x sx = runIdentity (alterF (\_-> Identity True) x sx) == insert x sx
+prop_alterF_delete x sx = runIdentity (alterF (\_-> Identity False) x sx) == delete x sx
+prop_alterF_identity x sx = runIdentity (alterF Identity x sx) == sx
+
+
+--- union, intersection, disjointUnion, difference
+prop_union :: Word64Set -> Word64Set -> Bool
+prop_union = isUnion union
+isUnion :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
+isUnion f sx sy = let sz = f sx sy in
+   all (\ x -> elem x sx || elem x sy) sz &&
+   all (`elem` sz) sx &&
+   all (`elem` sz) sy
+
+prop_intersection :: Word64Set -> Word64Set -> Bool
+prop_intersection = isIntersection intersection
+isIntersection :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
+isIntersection f sx sy = let sz = f sx sy in
+   all (\ x -> elem x sx && elem x sy) sz &&
+   all (\ x -> elem x sz /= notElem x sy) sx &&
+   all (\ x -> elem x sz /= notElem x sx) sy
+
+prop_disjointUnion :: Word64Set -> Word64Set -> Bool
+prop_disjointUnion = isDisjointUnion disjointUnion
+isDisjointUnion f sx sy =
+   all (\ x -> elem x sx /= elem x sy) sz &&
+   all (\ x -> elem x sz /= elem x sy) sx &&
+   all (\ x -> elem x sz /= elem x sx) sy
+   where sz = f sx sy
+
+prop_difference :: Word64Set -> Word64Set -> Bool
+prop_difference = isDifference difference
+isDifference :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
+isDifference f sx sy = let sz = f sx sy in
+   all (\ x -> elem x sx && notElem x sy) sz  &&
+   all (\ x -> elem x sz /= elem x sy) sx
+
+
+--- splitMember, maxView, minView
+prop_splitMember_member x sx = elem x sx == case splitMember x sx of (_, b, _) -> b
+prop_splitMember_ordered x sx =
+   case splitMember x sx of (sl, _, sg) -> all (x >) sl && all (x <) sg
+
+prop_maxView_maximum sx = all ((maximum sx ==) . fst) (maxView sx)
+prop_maxView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (maxView sx)
+
+prop_minView_minimum sx = all ((minimum sx ==) . fst) (minView sx)
+prop_minView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (minView sx)
