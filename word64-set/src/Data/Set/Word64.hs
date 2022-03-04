@@ -14,7 +14,7 @@ Word64Set, Set (..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, disjointUnion, difference,
 splitMember, maxView, minView,
-toAscList, toDesList,
+toAscList, toDesList, size,
 ) where
 
 import Control.DeepSeq
@@ -74,7 +74,7 @@ instance (i64 ~ Word64)=> Ext.IsList (Set i64) where
 instance Foldable Set where
    null (Set sw) = Internal.null sw
    {-# INLINE null #-}
-   length (Set sw) = fromIntegral (Internal.size sw)
+   length = fromEnum . size
    {-# INLINE length #-}
    foldMap f (Set sw) = Internal.foldMap f sw
    {-# INLINABLE foldMap #-}
@@ -90,6 +90,10 @@ instance Foldable Set where
    {-# NOTINLINE maximum #-}
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
    {-# NOTINLINE minimum #-}
+
+size :: Set w64 -> Word64
+size (Set sw) = Internal.size sw
+{-# INLINE size #-}
 
 empty :: Set Word64
 empty = Set Internal.empty

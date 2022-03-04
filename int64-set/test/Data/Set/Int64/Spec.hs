@@ -81,6 +81,9 @@ spec = do
    describe "foldr'" $ do
       "is strict foldr" `it` property prop_foldr'_is_strict_foldr
 
+   describe "size" $ do
+      "is the number of elements in the Set" `it` property prop_size
+
    describe "read, show" $ do
       "read . show === id" `it` property prop_show_read
 
@@ -126,6 +129,9 @@ prop_maximum_default sx =
 
 prop_null :: Int64Set -> Bool
 prop_null sx = null sx == (sx == mempty)
+
+prop_size :: Int64Set -> Bool
+prop_size sx = size sx == foldl' (\ n _ -> n + 1) 0 sx
 
 --- singleton, insert, delete
 prop_member_singleton x = elem x (singleton x)

@@ -11,7 +11,7 @@ Int64Set, Set(..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, disjointUnion, difference,
 splitMember, maxView, minView,
-toAscList, toDesList,
+toAscList, toDesList, size,
 ) where
 
 
@@ -75,7 +75,7 @@ instance (i64 ~ Int64)=> Ext.IsList (Set i64) where
 instance Foldable Set where
    null (Set sw) = Internal.null sw
    {-# INLINE null #-}
-   length (Set sw) = fromIntegral (Internal.size sw)
+   length = fromEnum . size
    {-# INLINE length #-}
    foldMap = foldMap
    {-# INLINABLE foldMap #-}
@@ -91,6 +91,10 @@ instance Foldable Set where
    {-# NOTINLINE maximum #-}
    minimum = foldr (\ x _ -> x) (error "minimum: empty Set")
    {-# NOTINLINE minimum #-}
+
+size :: Set i64 -> Word64
+size (Set sw) = Internal.size sw
+{-# INLINE size #-}
 
 empty :: Set Int64
 empty = Set Internal.empty

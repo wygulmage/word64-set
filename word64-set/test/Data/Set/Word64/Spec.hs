@@ -81,6 +81,9 @@ spec = do
    describe "foldr'" $ do
       "is strict foldr" `it` property prop_foldr'_is_strict_foldr
 
+   describe "size" $ do
+      "is the number of elements in the Set" `it` property prop_size
+
    describe "read, show" $ do
       "read . show === id" `it` property prop_show_read
 
@@ -98,7 +101,7 @@ prop_toList_eq sx sy = (sx == sy) == (toList sx == toList sy)
 --- IsList
 prop_to_from_list_identity sx = sx == fromList (toDesList sx)
 
---- Foldable
+------ Foldable
 isElem f sx = all (`f` sx) (toList sx)
 prop_elem :: Word64Set -> Bool
 prop_elem = isElem elem
@@ -112,22 +115,28 @@ prop_foldl'_is_strict_foldl sx =
 prop_foldr'_is_strict_foldr sx =
    foldr' (:) [] sx == toAscList sx
 
+mayFoldl1' :: (Foldable m)=> (a -> a -> a) -> m a -> Maybe a
+mayFoldl1' f = foldl' (\ z x -> maybe (Just x) (Just . f x) z) Nothing
+
 prop_minimum_default :: Word64Set -> Bool
 prop_minimum_default sx =
-  foldl' (\ z x -> maybe (Just x) (Just . min x) z) Nothing sx
+  mayFoldl1' min sx
   ==
   if null sx then Nothing else Just (minimum sx)
 
 prop_maximum_default :: Word64Set -> Bool
 prop_maximum_default sx =
-  foldl' (\ z x -> maybe (Just x) (Just . max x) z) Nothing sx
+  mayFoldl1' max sx
   ==
   if null sx then Nothing else Just (maximum sx)
 
 prop_null :: Word64Set -> Bool
 prop_null sx = null sx == (sx == mempty)
 
---- singleton, insert, delete
+prop_size :: Word64Set -> Bool
+prop_size sx = size sx == foldl' (\ n _ -> n + 1) 0 sx
+
+------ singleton, insert, delete
 prop_member_singleton x = elem x (singleton x)
 prop_insert_elem x sx = elem x (insert x sx)
 prop_delete_elem x sx = notElem x (delete x sx)
@@ -139,14 +148,14 @@ prop_insert_delete x sx =
       sx' = insert x sx
       sx'' = delete x sx'
 
---- alterF
+------ alterF
 prop_alterF_member x sx = getConst (alterF Const x sx) == elem x sx
 prop_alterF_insert x sx = runIdentity (alterF (\_-> Identity True) x sx) == insert x sx
 prop_alterF_delete x sx = runIdentity (alterF (\_-> Identity False) x sx) == delete x sx
 prop_alterF_identity x sx = runIdentity (alterF Identity x sx) == sx
 
 
---- union, intersection, disjointUnion, difference
+------ union, intersection, disjointUnion, difference
 prop_union :: Word64Set -> Word64Set -> Bool
 prop_union = isUnion union
 isUnion :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
