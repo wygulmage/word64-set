@@ -115,16 +115,17 @@ prop_foldl'_is_strict_foldl sx =
 prop_foldr'_is_strict_foldr sx =
    foldr' (:) [] sx == toAscList sx
 
+mayFoldl1' :: (Foldable m)=> (a -> a -> a) -> m a -> Maybe a
+mayFoldl1' f = foldl' (\ z x -> maybe (Just x) (Just . f x) z) Nothing
+
 prop_minimum_default :: Int64Set -> Bool
 prop_minimum_default sx =
-  foldl' (\ z x -> maybe (Just x) (Just . min x) z) Nothing sx
-  ==
+  mayFoldl1' min sx ==
   if null sx then Nothing else Just (minimum sx)
 
 prop_maximum_default :: Int64Set -> Bool
 prop_maximum_default sx =
-  foldl' (\ z x -> maybe (Just x) (Just . max x) z) Nothing sx
-  ==
+  mayFoldl1' max sx ==
   if null sx then Nothing else Just (maximum sx)
 
 prop_null :: Int64Set -> Bool
@@ -166,8 +167,8 @@ prop_intersection = isIntersection intersection
 isIntersection :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
 isIntersection f sx sy = let sz = f sx sy in
    all (\ x -> elem x sx && elem x sy) sz &&
-   all (\ x -> elem x sz /= notElem x sy) sx &&
-   all (\ x -> elem x sz /= notElem x sx) sy
+   all (\ x -> elem x sz == elem x sy) sx &&
+   all (\ x -> elem x sz == elem x sx) sy
 
 prop_disjointUnion :: Int64Set -> Int64Set -> Bool
 prop_disjointUnion = isDisjointUnion disjointUnion

@@ -120,14 +120,12 @@ mayFoldl1' f = foldl' (\ z x -> maybe (Just x) (Just . f x) z) Nothing
 
 prop_minimum_default :: Word64Set -> Bool
 prop_minimum_default sx =
-  mayFoldl1' min sx
-  ==
+  mayFoldl1' min sx ==
   if null sx then Nothing else Just (minimum sx)
 
 prop_maximum_default :: Word64Set -> Bool
 prop_maximum_default sx =
-  mayFoldl1' max sx
-  ==
+  mayFoldl1' max sx ==
   if null sx then Nothing else Just (maximum sx)
 
 prop_null :: Word64Set -> Bool
@@ -169,8 +167,8 @@ prop_intersection = isIntersection intersection
 isIntersection :: (Foldable m, Eq a)=> (m a -> m a -> m a) -> m a -> m a -> Bool
 isIntersection f sx sy = let sz = f sx sy in
    all (\ x -> elem x sx && elem x sy) sz &&
-   all (\ x -> elem x sz /= notElem x sy) sx &&
-   all (\ x -> elem x sz /= notElem x sx) sy
+   all (\ x -> elem x sz == elem x sy) sx &&
+   all (\ x -> elem x sz == elem x sx) sy
 
 prop_disjointUnion :: Word64Set -> Word64Set -> Bool
 prop_disjointUnion = isDisjointUnion disjointUnion
