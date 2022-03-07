@@ -11,6 +11,7 @@ import Data.List (sort, sortOn)
 import Data.Set.Int64
 import Test.QuickCheck
 import Test.Hspec
+import Test.Hspec.QuickCheck
 
 instance (i64 ~ Int64)=> Arbitrary (Set i64) where
    arbitrary = fmap fromList arbitrary
@@ -18,74 +19,74 @@ instance (i64 ~ Int64)=> Arbitrary (Set i64) where
 spec :: SpecWith ()
 spec = do
    describe "==" $ do
-      "sx == sx" `it` property prop_equal_self
-      "(toList sx == toList sy) == (sx == sy)" `it` property prop_toList_eq
+      "sx == sx" `prop` prop_equal_self
+      "(toList sx == toList sy) == (sx == sy)" `prop` prop_toList_eq
 
    describe "elem, insert, delete" $ do
-      "elem is elem" `it` property prop_elem
-      "member singleton" `it` property prop_member_singleton
-      "delete deletes" `it` property prop_delete_elem
-      "delete x . insert x = id" `it` property prop_insert_delete
+      "elem is elem" `prop` prop_elem
+      "member singleton" `prop` prop_member_singleton
+      "delete deletes" `prop` prop_delete_elem
+      "delete x . insert x = id" `prop` prop_insert_delete
 
    describe "alterF" $ do
-      "identity" `it` property prop_alterF_identity
-      "member" `it` property prop_alterF_member
-      "insert" `it` property prop_alterF_insert
-      "delete" `it` property prop_alterF_delete
+      "identity" `prop` prop_alterF_identity
+      "member" `prop` prop_alterF_member
+      "insert" `prop` prop_alterF_insert
+      "delete" `prop` prop_alterF_delete
 
    describe "union" $ do
-      "`union sx sy` is the set of all elements of `sx` and all elements of `sy`" `it` property prop_union
+      "`union sx sy` is the set of all elements of `sx` and all elements of `sy`" `prop` prop_union
 
    describe "intersection" $ do
-      "`intersection sx sy` is the set of all elements that are shared between `sx` and `sy`" `it` property prop_intersection
+      "`intersection sx sy` is the set of all elements that are shared between `sx` and `sy`" `prop` prop_intersection
 
    describe "disjointUnion" $ do
-      "disjointUnion sx sy is the set of all elements that are in either sx or sy but not both sx and sy." `it` property prop_disjointUnion
+      "disjointUnion sx sy is the set of all elements that are in either sx or sy but not both sx and sy." `prop` prop_disjointUnion
 
    describe "difference" $ do
-      "is difference" `it` property prop_difference
+      "is difference" `prop` prop_difference
 
    describe "splitMember" $ do
-      "member" `it` property prop_splitMember_member
-      "ordered" `it` property prop_splitMember_ordered
+      "member" `prop` prop_splitMember_member
+      "ordered" `prop` prop_splitMember_ordered
 
    describe "maxView" $ do
-      "returns maximum" `it` property prop_maxView_maximum
-      "deletes maximum" `it` property prop_maxView_delete
+      "returns maximum" `prop` prop_maxView_maximum
+      "deletes maximum" `prop` prop_maxView_delete
 
    describe "minView" $ do
-      "returns minimum" `it` property prop_minView_minimum
-      "deletes minimum" `it` property prop_minView_delete
+      "returns minimum" `prop` prop_minView_minimum
+      "deletes minimum" `prop` prop_minView_delete
 
    describe "to/from list" $ do
-      "identity" `it` property prop_to_from_list_identity
+      "identity" `prop` prop_to_from_list_identity
 
    describe "toAscList" $ do
-      "sorted" `it` property prop_toAscList_sorted
+      "sorted" `prop` prop_toAscList_sorted
 
    describe "toDesList" $ do
-      "sorted" `it` property prop_toDesList_sorted
+      "sorted" `prop` prop_toDesList_sorted
 
    describe "maximum" $ do
-      "default" `it` property prop_maximum_default
+      "default" `prop` prop_maximum_default
 
    describe "minimum" $ do
-      "default" `it` property prop_minimum_default
+      "default" `prop` prop_minimum_default
 
    describe "null" $ do
-      "is empty" `it` property prop_null
+      "is empty" `prop` prop_null
 
    describe "foldl'" $ do
-      "is strict foldl" `it` property prop_foldl'_is_strict_foldl
+      "is strict foldl" `prop` prop_foldl'_is_strict_foldl
 
    describe "foldr'" $ do
-      "is strict foldr" `it` property prop_foldr'_is_strict_foldr
+      "is strict foldr" `prop` prop_foldr'_is_strict_foldr
 
    describe "size" $ do
-      "is the number of elements in the Set" `it` property prop_size
+      "is the number of elements in the Set" `prop` prop_size
 
    describe "read, show" $ do
-      "read . show === id" `it` property prop_show_read
+      "read . show === id" `prop` prop_show_read
 
 
 --- Show, Read
@@ -116,7 +117,7 @@ prop_foldr'_is_strict_foldr sx =
    foldr' (:) [] sx == toAscList sx
 
 mayFoldl1' :: (Foldable m)=> (a -> a -> a) -> m a -> Maybe a
-mayFoldl1' f = foldl' (\ z x -> maybe (Just x) (Just . f x) z) Nothing
+mayFoldl1' f = foldl' (\ z x -> Just $! maybe x (f x) z) Nothing
 
 prop_minimum_default :: Int64Set -> Bool
 prop_minimum_default sx =
