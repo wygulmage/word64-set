@@ -91,7 +91,7 @@ spec = do
       "read . show === id" `prop` prop_show_read
 
    describe "filter" $ do
-      "`filter even` is equivalent to `List.filter even`" `prop` prop_list_filter_even
+      "`filter` is equivalent to `List.filter`" `prop` prop_list_filter
 
 
 --- Show, Read
@@ -206,4 +206,4 @@ prop_minView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (minView sx)
 
 --- map, filter
 
-prop_list_filter_even sx = toAscList (filter even sx) == List.filter even (toAscList sx)
+prop_list_filter (Blind p) sx = toAscList (filter p sx) == List.filter p (toAscList sx)
