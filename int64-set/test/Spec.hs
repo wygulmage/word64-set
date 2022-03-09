@@ -1,5 +1,3 @@
-{-# LANGUAGE GADTs #-}
-
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Data.Set.Int64.Spec

@@ -9,14 +9,19 @@
 This is based on the hard work of Donnacha Oisin Kidney and others.
 -}
 
+{- Any function exported from this module should be tested in its `Spec` submodule in the tests directory.
+-}
+
 module Data.Set.Word64 (
 Word64Set, Set (..), empty, singleton, fromList,
 insert, delete, alterF,
 intersection, union, disjointUnion, difference,
 splitMember, maxView, minView,
 toAscList, toDesList, size,
+filter,
 ) where
 
+import Prelude hiding (filter)
 import Control.DeepSeq
 import Data.Semigroup
 import Data.Foldable
@@ -187,6 +192,9 @@ maxView (Set sw) = case Internal.maxView sw of
    Just (w, sw') -> Just (w, Set sw')
    Nothing -> Nothing
 {-# NOTINLINE maxView #-}
+
+filter :: (w64 -> Bool) -> Set w64 -> Set w64
+filter p (Set sx) = Set (Internal.filter p sx)
 
 observe :: Set w64 -> Set Word64
 observe si@(Set _) = si

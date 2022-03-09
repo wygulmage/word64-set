@@ -449,7 +449,6 @@ foldl'Bits f z p = loop z
             !m' = m .+. lowestBit m
 {-# INLINE foldl'Bits #-}
 
-
 foldrBits :: forall a. (Word64 -> a -> a) -> a -> Prefix -> BitMap -> a
 {-^ Fold over the Word64s in a BitMap lazily, from lowest to highest. -}
 foldrBits f z p = loop

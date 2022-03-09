@@ -12,6 +12,7 @@ insert, delete, alterF,
 intersection, union, disjointUnion, difference,
 splitMember, maxView, minView,
 toAscList, toDesList, size,
+filter,
 ) where
 
 
@@ -21,7 +22,7 @@ import qualified Data.Foldable as Foldable
 import Data.Word (Word64)
 import Data.Int (Int64)
 import qualified Data.Set.Word64.Internal as Internal
-import Prelude hiding (foldMap, foldl, foldr)
+import Prelude hiding (foldMap, foldl, foldr, filter)
 import Text.Read
 import qualified GHC.Exts as Ext
 
@@ -276,6 +277,11 @@ minView (Set sx) = case sx of
            Just (x, sx') -> Just (word64ToInt64 x, Set sx')
            Nothing -> Nothing
 {-# NOTINLINE minView #-}
+
+
+filter :: (i64 -> Bool) -> Set i64 -> Set i64
+filter p (Set sx) = Set (Internal.filter (p . word64ToInt64) sx)
+
 
 observe :: Set a -> Set Int64
 observe si@(Set _) = si

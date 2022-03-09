@@ -2,12 +2,14 @@
 
 module Data.Set.Int64.Spec where
 
+import Prelude hiding (filter, map)
 import Data.Ord
 import Data.Foldable
 import Data.Functor.Const
 import Data.Functor.Identity
 import Data.Int (Int64)
 import Data.List (sort, sortOn)
+import qualified Data.List as List
 import Data.Set.Int64
 import Test.QuickCheck
 import Test.Hspec
@@ -87,6 +89,9 @@ spec = do
 
    describe "read, show" $ do
       "read . show === id" `prop` prop_show_read
+
+   describe "filter" $ do
+      "`filter even` is equivalent to `List.filter even`" `prop` prop_list_filter_even
 
 
 --- Show, Read
@@ -197,3 +202,13 @@ prop_maxView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (maxView sx)
 
 prop_minView_minimum sx = all ((minimum sx ==) . fst) (minView sx)
 prop_minView_delete sx = all (\ (x, sx') -> sx' == delete x sx) (minView sx)
+
+
+--- map, filter
+
+prop_list_filter_even sx = toAscList (filter even sx) == List.filter even (toAscList sx)
+
+
+{- Notes
+The Foldable methods are probably the most important for testing, because they summarize sets. Most tests depend on the correctness of `elem` or `toList`.
+-}
